@@ -8,6 +8,7 @@ set(PROJECT_NAME dynamic_node_composition)
 set(EXECUTABLES StaticSingleThreadedExecutor StaticSingleThreadedExecutorWithParameterValidation)
 
 set(LIB_DEPENDENCIES
+  ament_index_cpp
   ament_cmake
   rclcpp
   rclcpp_components

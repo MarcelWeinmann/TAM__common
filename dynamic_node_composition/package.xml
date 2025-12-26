@@ -11,6 +11,7 @@
   <depend>rclcpp</depend>
   <depend>param_management_ros2_integration_cpp</depend>
   <depend>vehicle_handler_cpp</depend>
+  <depend>ament_index_cpp</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_cmake_gtest</test_depend>
