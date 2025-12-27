@@ -114,7 +114,10 @@ struct DataPerWheel
   OVERLOAD_OPERATOR_COMPONENT_WISE_COMPARISON(operator>, >)
   OVERLOAD_OPERATOR_COMPONENT_WISE_COMPARISON(operator<=, <=)
   OVERLOAD_OPERATOR_COMPONENT_WISE_COMPARISON(operator>=, >=)
+#if __cplusplus >= 202002L
   OVERLOAD_OPERATOR_COMPONENT_WISE_COMPARISON(operator<=>, <=>)
+#endif // __cplusplus >= 202002L
+
 #undef OVERLOAD_OPERATOR_COMPONENT_WISE_COMPARISON
   // Make type iterable
   // ================================================================================
@@ -145,6 +148,7 @@ struct DataPerWheel
   }
   // Addition function for bool overload
   // ======================================================
+#if __cplusplus >= 202002L
   DataPerWheel<bool> operator!() const requires(std::is_same_v<T, bool>)
   {
     return {!front_left, !front_right, !rear_left, !rear_right};
@@ -171,6 +175,7 @@ struct DataPerWheel
   {
     return (front_left || front_right || rear_left || rear_right);
   }
+#endif // __cplusplus >= 202002L
 };
 }  // namespace tam::types::common
 namespace std

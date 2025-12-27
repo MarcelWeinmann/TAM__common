@@ -18,7 +18,6 @@ target_include_directories(${PROJECT_NAME}
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
 )
-target_compile_features(${PROJECT_NAME} INTERFACE c_std_99 cxx_std_20)
 
 ament_target_dependencies(
   ${PROJECT_NAME} INTERFACE
