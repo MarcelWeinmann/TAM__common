@@ -24,7 +24,7 @@ add_library(${PROJECT_NAME} SHARED
   src/node_monitor.cpp
 )
 
-ament_target_dependencies(${PROJECT_NAME} rclcpp diagnostic_msgs param_management_ros2_integration_cpp tum_types_cpp tum_helpers_cpp param_management_cpp tum_type_conversions_ros_cpp)
+ament_target_dependencies(${PROJECT_NAME} rclcpp ament_index_cpp diagnostic_msgs param_management_ros2_integration_cpp tum_types_cpp tum_helpers_cpp param_management_cpp tum_type_conversions_ros_cpp)
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC
@@ -68,7 +68,7 @@ install(
 
 
 ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET) # so client can also call target_link_libraries(template_lib_cpp::template_lib_cpp)
-ament_export_dependencies(diagnostic_msgs param_management_ros2_integration_cpp tum_types_cpp param_management_cpp tum_helpers_cpp tum_type_conversions_ros_cpp) # other dependencies so client does not need to call find_package on them
+ament_export_dependencies(diagnostic_msgs param_management_ros2_integration_cpp tum_types_cpp param_management_cpp tum_helpers_cpp ament_index_cpp tum_type_conversions_ros_cpp) # other dependencies so client does not need to call find_package on them
 
 # if(BUILD_TESTING)
 #   find_package(ament_lint_auto REQUIRED)
