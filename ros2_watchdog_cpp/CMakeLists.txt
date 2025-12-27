@@ -24,7 +24,7 @@ add_library(${PROJECT_NAME} SHARED
   src/node_monitor.cpp
 )
 
-ament_target_dependencies(${PROJECT_NAME} rclcpp ament_index_cpp diagnostic_msgs param_management_ros2_integration_cpp tum_types_cpp tum_helpers_cpp param_management_cpp tum_type_conversions_ros_cpp)
+ament_target_dependencies(${PROJECT_NAME} rclcpp diagnostic_msgs param_management_ros2_integration_cpp tum_types_cpp tum_helpers_cpp param_management_cpp tum_type_conversions_ros_cpp)
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC
@@ -41,7 +41,7 @@ target_include_directories(example_monitor
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
 )
-ament_target_dependencies(example_monitor rclcpp std_msgs diagnostic_msgs tum_helpers_cpp tum_types_cpp tum_type_conversions_ros_cpp)
+ament_target_dependencies(example_monitor rclcpp ament_index_cpp std_msgs diagnostic_msgs tum_helpers_cpp tum_types_cpp tum_type_conversions_ros_cpp)
 target_link_libraries(example_monitor ${PROJECT_NAME})
 
 install(
