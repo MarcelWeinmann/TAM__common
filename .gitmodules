@@ -12,4 +12,4 @@
 	url = https://github.com/tier4/tier4_autoware_msgs
 [submodule "submodules/autoware_msgs"]
 	path = submodules/autoware_msgs
-	url = https://github.com/tier4/autoware_auto_msgs.git
+	url = https://github.com/autowarefoundation/autoware_msgs
