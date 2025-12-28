@@ -42,9 +42,9 @@ std::unique_ptr<Track> Track::create_from_csv(const std::string & path, TrackRef
 }
 void Track::create_normal_vector()
 {
-  const auto theta = this->theta().array();
-  const auto mu = this->mu().array();
-  const auto phi = this->phi().array();
+  const Eigen::ArrayXd theta = this->theta().array();
+  const Eigen::ArrayXd mu = this->mu().array();
+  const Eigen::ArrayXd phi = this->phi().array();
   Eigen::MatrixXd normal;
   normal.resize(this->s_coord().rows(), 3);
   normal.col(0) = theta.cos() * mu.sin() * phi.sin() - theta.sin() * phi.cos();
