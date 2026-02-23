@@ -18,16 +18,15 @@ int main()
   int samples = 1000;
   auto start = high_resolution_clock::now();
   for (int i = 0; i < samples; i++) {
-    sn = th->project_2d_point_on_track(-131.019574, 369.886773);
+    sn = th->project_2d_point_on_track_global(-131.019574, 369.886773, 0.0, 1000.0);
   }
   auto stop = high_resolution_clock::now();
 
   auto duration = duration_cast<microseconds>(stop - start);
   // TOdo (Simon H.): calculated s is slightly different from s in trackfile
   std::cout << "s: " << sn[0] << "; n: " << sn[1] << "; idx: " << std::endl;
-  std::cout << "Time: " << duration.count() * 1e-6
-            << "s ; Duration per Execution: " << duration.count() * 1e-3 / samples << "ms"
-            << std::endl;
+  std::cout << "Time: " << duration.count() * 1e-6 << "s ; Duration per Execution: "
+            << duration.count() * 1e-3 / samples << "ms" << std::endl;
 
   // Convert back
   Eigen::Vector3d xy;
@@ -40,8 +39,7 @@ int main()
   auto duration2 = duration_cast<microseconds>(stop2 - start2);
   // TOdo (Simon H.): calculated s is slightly different from s in trackfile
   std::cout << "x: " << xy[0] << "; y: " << xy[1] << std::endl;
-  std::cout << "Time: " << duration2.count() * 1e-6
-            << "s ; Duration per Execution: " << duration2.count() * 1e-3 / samples << "ms"
-            << std::endl;
+  std::cout << "Time: " << duration2.count() * 1e-6 << "s ; Duration per Execution: "
+            << duration2.count() * 1e-3 / samples << "ms" << std::endl;
   return 0;
 }

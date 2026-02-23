@@ -4,15 +4,18 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <tum_msgs/msg/tum_connection_status.hpp>
+#include <tum_ros_helpers_cpp/qos.hpp>
+
 using namespace std::chrono_literals;
 class MinimalStatusPublisher : public rclcpp::Node
 {
 public:
   MinimalStatusPublisher() : Node("minimal_status_publisher")
   {
-    publisher_ =
-      this->create_publisher<tum_msgs::msg::TUMConnectionStatus>("/connection_status", 10);
-    prm_cmd_publisher_ = this->create_publisher<nav_msgs::msg::Odometry>("/telemetry", 10);
+    publisher_ = this->create_publisher<tum_msgs::msg::TUMConnectionStatus>(
+      "/connection_status", tam::ros::get_qos());
+    prm_cmd_publisher_ =
+      this->create_publisher<nav_msgs::msg::Odometry>("/telemetry", tam::ros::get_qos());
     timer_ =
       this->create_wall_timer(500ms, std::bind(&MinimalStatusPublisher::timer_callback, this));
   }

@@ -1,4 +1,5 @@
 // Copyright 2024 Simon Sagmeister
+#pragma once
 #include <rclcpp/rclcpp.hpp>
 #include <utility>
 namespace tam

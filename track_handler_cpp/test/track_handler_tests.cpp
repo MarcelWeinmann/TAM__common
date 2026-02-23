@@ -37,16 +37,18 @@ TEST_F(monza_track, sn2cartesian)
   ASSERT_EQ(xyz.rows(), s.size());
   ASSERT_EQ(xyz.cols(), 3);
 }
-TEST_F(monza_track, project_2d_point_on_track)
+TEST_F(monza_track, project_2d_point_on_track_global)
 {
-  Eigen::Vector2d vec = th->project_2d_point_on_track(-155, 110);
+  Eigen::Vector2d vec = th->project_2d_point_on_track_global(-155, 110, 0.0, 1000.0);
   ASSERT_LE(1.4642644 - vec(1), 1e-5);
 
   Eigen::VectorXd x(4);
   x << -155, -155, -156, -156;
   Eigen::VectorXd y(4);
   y << 114, 116, 118, 120;
-  auto sn = th->project_2d_point_on_track(x, y);
+  Eigen::VectorXd z(4);
+  z << 0, 0, 0, 0;
+  auto sn = th->project_2d_point_on_track_global(x, y, z, 1000.0);
   ASSERT_EQ(sn.rows(), x.size());
   ASSERT_EQ(sn.cols(), 2);
 }

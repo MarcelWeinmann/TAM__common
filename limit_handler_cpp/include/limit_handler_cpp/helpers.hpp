@@ -173,7 +173,4 @@ tam::types::control::ControlConstraintPointAsPolygon interp_control_constraint_p
  */
 tam::types::control::ControlConstraintsPolygon interp_control_constraints(
   const tam::types::control::ControlConstraints & constraints, const int n_points);
-void update_dynamic_constraints(
-  tam::types::control::ControlConstraintsPolygon * const control_constraints_ptr,
-  const double v_mps, const double kappa_max_steering_1pm, const double P_VDC_MinVelSlipCalc_mps);
 }  // namespace tam::limits

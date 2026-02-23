@@ -100,6 +100,9 @@ inline Eigen::VectorXd gradient(
   // return
   return out;
 }
+/**
+ * Calculate the index of the first value less than x in an orderer sequence
+ */
 template <typename _ForwardIterator>
 inline int find_bottom_idx(_ForwardIterator __first, _ForwardIterator __last, const double x)
 {
@@ -107,23 +110,90 @@ inline int find_bottom_idx(_ForwardIterator __first, _ForwardIterator __last, co
   if (iter_geq == __first) {
     return 0;
   }
-  if (iter_geq == __last) {
-    return iter_geq - __first - 2;
-  }
   return iter_geq - __first - 1;
 }
-// xp muss monoton steigend sein
+/**
+ * Interpolation function replicating funcitonality of numpy.interp
+ *
+ * xp needs to be monotonic increasing for this function to work correctly
+ *
+ * When x is less than any xp, the first element of fp will be returned
+ *
+ * When x is larger than any xp, the last element fp will be returned
+ */
 template <typename Ta, typename Tb>
 inline double interp(const double x, const Ta & xp, const Tb & fp)
 {
   if ((xp.end() - xp.begin()) != (fp.end() - fp.begin())) {
     throw std::invalid_argument("<tam::helper::geometry::interp> xp.size() != fp.size()");
   }
+  /**
+   * Handle left and right bound
+   */
+  if (x < *(xp.begin())) {
+    return *(fp.begin());
+  }
+  if (x > *(xp.end() - 1)) {
+    return *(fp.end() - 1);
+  }
   int i = find_bottom_idx(xp.begin(), xp.end(), x);
   // f = fp(i) + ((x - xp(i)) / (xp(i + 1) - xp(i))) * (fp(i + 1) - fp(i));
   auto fp_idx = fp.begin();
   auto xp_idx = xp.begin();
   return *(fp_idx + i) + ((x - *(xp_idx + i)) / (*(xp_idx + i + 1) - *(xp_idx + i))) *
+                           (*(fp_idx + i + 1) - *(fp_idx + i));
+}
+/**
+ * Interpolation function replicating funcitonality of numpy.interp with period argument
+ *
+ * xp needs to monotonic increasing for this function to work correctly
+ *
+ * The peroid parameter implements the wraparound of the value range
+ *
+ * Values larger than the largest element in xp and smaller than the smallest element of xp
+ * will be interpolated between last and first element of fp with the distances defined by
+ * the wraparound
+ */
+template <typename Ta, typename Tb, typename Tc>
+inline double interp(const double x, const Ta & xp, const Tb & fp, const Tc period)
+{
+  if ((xp.end() - xp.begin()) != (fp.end() - fp.begin())) {
+    throw std::invalid_argument("<tam::helper::geometry::interp> xp.size() != fp.size()");
+  }
+  if (period <= *(xp.end() - 1)) {
+    throw std::invalid_argument(
+      "<tam::helper::geometry::interp> period has to be larger than or equal to last xp");
+  }
+  const double x_mod = std::fmod(x, period);
+
+  // Before start of xp array, begin wraparound with period
+  if (x_mod < *(xp.begin())) {
+    auto xp_idx_start = xp.begin();
+    auto xp_idx_end = xp.end();
+    auto fp_idx_start = fp.begin();
+    auto fp_idx_end = fp.end();
+    // Interpolate between last and first
+    return *(fp_idx_end - 1) + ((period - *(xp_idx_end - 1) + x_mod) /
+                                ((period - *(xp_idx_end - 1)) + *(xp_idx_start))) *
+                                 (*(fp_idx_start) - *(fp_idx_end - 1));
+  }
+  // Exceeded end of xp array, begin wraparound with period
+  if (x_mod > *(xp.end() - 1)) {
+    auto xp_idx_start = xp.begin();
+    auto xp_idx_end = xp.end();
+    auto fp_idx_start = fp.begin();
+    auto fp_idx_end = fp.end();
+    // Interpolate between last and first
+    return *(fp_idx_end - 1) +
+           ((period - x_mod) / ((period - *(xp_idx_end - 1)) + *(xp_idx_start))) *
+             (*(fp_idx_start) - *(fp_idx_end - 1));
+  }
+
+  int i = find_bottom_idx(xp.begin(), xp.end(), x);
+  auto fp_idx = fp.begin();
+  auto xp_idx = xp.begin();
+  // f = fp(i) + ((x - xp(i)) / (xp(i + 1) - xp(i))) * (fp(i + 1) - fp(i));
+  return *(fp_idx + i) + ((x_mod - *(xp_idx + i)) / (*(xp_idx + i + 1) - *(xp_idx + i))) *
                            (*(fp_idx + i + 1) - *(fp_idx + i));
 }
 template <typename Ta, typename Tb>
@@ -133,6 +203,17 @@ inline std::vector<double> interp(const std::vector<double> & x, const Ta & xp, 
   f.reserve(x.size());
   for (const auto & x_ : x) {
     f.push_back(interp(x_, xp, fp));
+  }
+  return f;
+}
+template <typename Ta, typename Tb, typename Tc>
+inline std::vector<double> interp(
+  const std::vector<double> & x, const Ta & xp, const Tb & fp, const Tc period)
+{
+  std::vector<double> f;
+  f.reserve(x.size());
+  for (const auto & x_ : x) {
+    f.push_back(interp(x_, xp, fp, period));
   }
   return f;
 }
@@ -146,6 +227,55 @@ inline Eigen::MatrixXd interp(
   auto x_it = x.reshaped();
   for (int i = 0; i < f.size(); ++i) {
     f_it(i) = interp(x_it(i), xp, fp);
+  }
+  return f_it.reshaped(x.rows(), x.cols());
+}
+template <typename Ta, typename Tb, typename Tc>
+inline Eigen::MatrixXd interp(
+  const Eigen::Ref<const Eigen::MatrixXd> x, const Ta & xp, const Tb & fp, const Tc period)
+{
+  Eigen::MatrixXd f;
+  f.resize(x.rows(), x.cols());
+  auto f_it = f.reshaped();
+  auto x_it = x.reshaped();
+  for (int i = 0; i < f.size(); ++i) {
+    f_it(i) = interp(x_it(i), xp, fp, period);
+  }
+  return f_it.reshaped(x.rows(), x.cols());
+}
+// Function to perform 'previous' interpolation
+template <typename Ta, typename Tb>
+inline double interp_previous(const double x, const Ta & xp, const Tb & fp)
+{
+  if ((xp.end() - xp.begin()) != (fp.end() - fp.begin())) {
+    throw std::invalid_argument("<interp_previous> xp.size() != fp.size()");
+  }
+  int i = find_bottom_idx(xp.begin(), xp.end(), x);
+  auto fp_idx = fp.begin();
+  return *(fp_idx + i);
+}
+// Overloaded function to handle a vector of x values
+template <typename Ta, typename Tb>
+inline std::vector<double> interp_previous(
+  const std::vector<double> & x, const Ta & xp, const Tb & fp)
+{
+  std::vector<double> f;
+  f.reserve(x.size());
+  for (const auto & xi : x) {
+    f.push_back(interp_previous(xi, xp, fp));
+  }
+  return f;
+}
+template <typename Ta, typename Tb>
+inline Eigen::MatrixXd interp_previous(
+  const Eigen::Ref<const Eigen::MatrixXd> x, const Ta & xp, const Tb & fp)
+{
+  Eigen::MatrixXd f;
+  f.resize(x.rows(), x.cols());
+  auto f_it = f.reshaped();
+  auto x_it = x.reshaped();
+  for (int i = 0; i < f.size(); ++i) {
+    f_it(i) = interp_previous(x_it(i), xp, fp);
   }
   return f_it.reshaped(x.rows(), x.cols());
 }

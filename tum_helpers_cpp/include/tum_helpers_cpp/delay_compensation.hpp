@@ -10,7 +10,6 @@
 // tum types
 #include "tum_types_cpp/common.hpp"
 #include "tum_types_cpp/control.hpp"
-
 namespace tam::helpers
 {
 class DelayCompensation
@@ -20,12 +19,7 @@ private:
   /**
    * @brief FiFo containing the last N state estimation outputs for the position
    */
-  std::deque<tam::types::common::Vector3D<double>> position_fifo_;
-
-  /**
-   * @brief FiFo containing the last N state estimation outputs for the orientation
-   */
-  std::deque<tam::types::common::Vector3D<double>> orientation_fifo_;
+  std::deque<tam::types::control::Odometry> odometry_fifo_;
 
   /**
    * @brief step size of the state estimation input
@@ -56,12 +50,12 @@ public:
    *
    * @param[in] input         - tam::types::control::Odometry:
    *                            current state estimation output
-   * 
+   *
    * @param[in] delta_t_s     - double:
    *                            time delay to compensate in seconds
-   * 
+   *
    * @param[out] result       - bool:
-   *                            true if the delay was successfully compensated 
+   *                            true if the delay was successfully compensated
    */
   bool compensate(tam::types::control::Odometry & input_odometry, double delta_t_s);
 };

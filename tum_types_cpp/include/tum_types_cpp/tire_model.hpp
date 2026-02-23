@@ -2,7 +2,6 @@
 #pragma once
 
 #include "tum_types_cpp/common.hpp"
-
 namespace tam::types::tire_models
 {
 struct TireModelOutput
@@ -124,4 +123,4 @@ struct MF_52
   double RVY5{0.0};
   double RVY6{0.0};
 };
-}  // namespace tam::types::tire_params
+}  // namespace tam::types::tire_models

@@ -4,6 +4,7 @@
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -96,6 +97,12 @@ struct Odometry
   In order, the parameters are:
   (x, y, z, rotation about X axis, rotation about Y axis, rotation about Z axis) */
   std::array<double, 36> velocity_covariance;  //  Row Major Matrix Representation
+  // nan check
+  bool hasNaN() const
+  {
+    return position_m.hasNaN() || orientation_rad.hasNaN() || velocity_mps.hasNaN() ||
+           angular_velocity_radps.hasNaN();
+  }
 };
 struct AccelerationwithCovariances
 {
@@ -109,6 +116,8 @@ struct AccelerationwithCovariances
   In order, the parameters are:
   (x, y, z, rotation about X axis, rotation about Y axis, rotation about Z axis) */
   std::array<double, 36> acceleration_covariance;  //  Row Major Matrix Representation
+  // nan check
+  bool hasNaN() const { return acceleration_mps2.hasNaN() || angular_acceleration_radps2.hasNaN(); }
 };
 struct AutowareSteeringReport
 {
@@ -154,6 +163,11 @@ struct LongitudinalControlCommand
   bool is_defined_acceleration;  // Indicate whether the acceleration field is filled
   bool is_defined_jerk;          // Indicate whether the jerk field is filled.
 };
+struct EnhancedLongitudinalControlCommand
+{
+  uint64_t time_stamp_ns;
+  std::vector<LongitudinalControlCommand> points;
+};
 // Inspired by
 // https://github.com/autowarefoundation/autoware_msgs/blob/main/autoware_control_msgs/msg/Lateral.msg
 struct LateralControlCommand
@@ -163,6 +177,37 @@ struct LateralControlCommand
   double steering_angle_tire_rad;
   double steering_rotation_rate_tire_radps;
   bool is_defined_steering_rotation_rate;  // Indicate whether the rotation rate field is filled
+  LateralControlCommand operator+(const LateralControlCommand & other) const
+  {
+    return {
+      std::max(time_stamp_ns, other.time_stamp_ns),
+      std::max(control_time_ns, other.control_time_ns),
+      steering_angle_tire_rad + other.steering_angle_tire_rad,
+      steering_rotation_rate_tire_radps + other.steering_rotation_rate_tire_radps,
+      is_defined_steering_rotation_rate && other.is_defined_steering_rotation_rate};
+  }
+  // Subtraction
+  LateralControlCommand operator-(const LateralControlCommand & other) const
+  {
+    return {
+      std::max(time_stamp_ns, other.time_stamp_ns),
+      std::max(control_time_ns, other.control_time_ns),
+      steering_angle_tire_rad - other.steering_angle_tire_rad,
+      steering_rotation_rate_tire_radps - other.steering_rotation_rate_tire_radps,
+      is_defined_steering_rotation_rate && other.is_defined_steering_rotation_rate};
+  }
+  // Scalar multiplication (right)
+  LateralControlCommand operator*(double scalar) const
+  {
+    return {
+      time_stamp_ns, control_time_ns, steering_angle_tire_rad * scalar,
+      steering_rotation_rate_tire_radps * scalar, is_defined_steering_rotation_rate};
+  }
+  // Friend operator for left-multiplying a scalar
+  friend LateralControlCommand operator*(double scalar, const LateralControlCommand & lat_cmd)
+  {
+    return lat_cmd * scalar;
+  }
 };
 // #endregion
 // #region Additionally to the Autoware Interfaces
@@ -234,14 +279,14 @@ template <typename T, size_t N>
 std::array<T, N> operator+(const std::array<T, N> & ob1, const std::array<T, N> & ob2)
 {
   std::array<T, N> res;
-  for (int i = 0; i < N; ++i) res[i] = ob1[i] + ob2[i];
+  for (std::size_t i = 0; i < N; ++i) res[i] = ob1[i] + ob2[i];
   return res;
 }
 template <typename T, size_t N>
 std::array<T, N> operator*(double factor, const std::array<T, N> & obj)
 {
   std::array<T, N> res;
-  for (int i = 0; i < N; ++i) res[i] = factor * obj[i];
+  for (std::size_t i = 0; i < N; ++i) res[i] = factor * obj[i];
   return res;
 }
 struct ControlConstraintPoint
@@ -378,6 +423,12 @@ struct EngineTorques
   double T_min_Nm;
   double T_30percThrottle_Nm;
 };
+struct AdditionalEspTargets
+{
+  std::optional<double> ay_request_mps2;
+  std::optional<double> yaw_rate_request_radps;
+  std::optional<double> slip_angle_request_rad;
+};
 // #endregion
 struct TUMAccLimitDebug
 {
@@ -408,18 +459,33 @@ struct acados_mpc_debug
   double throttle_real;
   double brake_real;
   double steering_angle_real_rad;
+  double delta_psi_real_rad;
+
+  // delay compensated state
+  double d_comp_m;
+  double delta_psi_comp_rad;
+  double psi_dot_comp_radps;
+  double vx_comp_mps;
+  double vy_comp_mps;
+  double throttle_comp;
+  double brake_comp;
+  double steering_angle_comp_rad;
 
   // solver stats, timing
-  double solver_status;
+  int solver_status;
+  int qp_solver_status;
   unsigned int solver_qp_iter;
   unsigned int solver_sqp_iter;
   int warm_start_num;
+  double kkt_norm_inf;
   double res_stat;
   double res_eq;
   double res_ineq;
   double res_comp;
   double cost_value;
   double time_acados_solve_s;
+  double time_acados_prep_ms;
+  double time_acados_feedb_ms;
   double time_total_controller_step_s;
 
   // resampled planner traj
@@ -455,12 +521,22 @@ struct acados_mpc_debug
   double d_lim_ub_m[mpc_horizon_length + 1];
   double d_lim_lb_m[mpc_horizon_length + 1];
 
+  // Commands
+  double steering_angle_cmd_rad;      // Steering angle command in radians
+  double ax_cmd_mps2;                 // Longitudinal acceleration command in m/s^2
+  double mpc_steering_angle_cmd_rad;  // Steering angle command from MPC in radians
+  double mpc_ax_cmd_mps2;             // Longitudinal acceleration command from MPC in m/s^2
+  double
+    low_speed_steering_angle_cmd_rad;  // Steering angle command for low speed controller in radians
+  double
+    low_speed_ax_cmd_mps2;  // Longitudinal acceleration command for low speed controller in m/s^2
+  double nmpc_share;
+
   // MPC prediction (Solver solution)
   double vx_pred_mps[mpc_horizon_length + 1];
   double vy_pred_mps[mpc_horizon_length + 1];
   double delta_psi_pred_rad[mpc_horizon_length + 1];
   double psi_dot_pred_radps[mpc_horizon_length + 1];
-  double sigma_pred[mpc_horizon_length + 1];
   double d_pred_m[mpc_horizon_length + 1];
   double d_pred_upper_m[mpc_horizon_length + 1];
   double d_pred_lower_m[mpc_horizon_length + 1];
@@ -471,12 +547,74 @@ struct acados_mpc_debug
   double throttle_pred[mpc_horizon_length + 1];
   double brake_pred[mpc_horizon_length + 1];
   double tube_size_pred[mpc_horizon_length + 1];
+  double omega_f_pred_radps[mpc_horizon_length + 1];
+  double omega_r_pred_radps[mpc_horizon_length + 1];
+
+  // warm starts for states
+  double vx_pred_warmstart_mps[mpc_horizon_length + 1];
+  double vy_pred_warmstart_mps[mpc_horizon_length + 1];
+  double delta_psi_pred_warmstart_rad[mpc_horizon_length + 1];
+  double psi_dot_pred_warmstart_radps[mpc_horizon_length + 1];
+  double d_pred_warmstart_m[mpc_horizon_length + 1];
+  double steering_angle_pred_warmstart_rad[mpc_horizon_length + 1];
+  double throttle_pred_warmstart[mpc_horizon_length + 1];
+  double brake_pred_warmstart[mpc_horizon_length + 1];
+  double tube_size_pred_warmstart[mpc_horizon_length + 1];
+  double omega_f_pred_warmstart_radps[mpc_horizon_length + 1];
+  double omega_r_pred_warmstart_radps[mpc_horizon_length + 1];
 
   // inputs
   double ax_pred_mps2[mpc_horizon_length + 1];
   double ay_pred_mps2[mpc_horizon_length + 1];
-  double steering_angle_rate_input_pred_radps[mpc_horizon_length + 1];
-  double throttle_rate_input_pred[mpc_horizon_length + 1];
-  double brake_rate_input_pred[mpc_horizon_length + 1];
+  double steering_angle_rate_input_pred_radps[mpc_horizon_length];
+  double throttle_rate_input_pred[mpc_horizon_length];
+  double brake_rate_input_pred[mpc_horizon_length];
+  double u_t_f_pred_nm[mpc_horizon_length];
+  double u_t_r_pred_nm[mpc_horizon_length];
+
+  // warm starts for inputs
+  double steering_angle_rate_input_pred_warmstart_radps[mpc_horizon_length];
+  double throttle_rate_input_pred_warmstart[mpc_horizon_length];
+  double brake_rate_input_pred_warmstart[mpc_horizon_length];
+  double u_t_f_pred_warmstart_nm[mpc_horizon_length];
+  double u_t_r_pred_warmstart_nm[mpc_horizon_length];
+
+  // algebraic variables
+  double v_y_tire_r_mps[mpc_horizon_length];
+  double v_y_tire_f_mps[mpc_horizon_length];
+  double alpha_f_rad[mpc_horizon_length];
+  double alpha_r_rad[mpc_horizon_length];
+  double kappa_f[mpc_horizon_length];
+  double kappa_r[mpc_horizon_length];
+  double f_x_tire_f_n[mpc_horizon_length];
+  double f_x_tire_r_n[mpc_horizon_length];
+  double f_y_tire_f_n[mpc_horizon_length];
+  double f_y_tire_r_n[mpc_horizon_length];
+  double f_z_tire_f_n[mpc_horizon_length];
+  double f_z_tire_r_n[mpc_horizon_length];
+
+  // slacks
+  // polytopic
+  double slack_d_m_max[mpc_horizon_length];
+  double slack_d_m_min[mpc_horizon_length];
+  double slack_delta_rad_max[mpc_horizon_length];
+  double slack_delta_rad_min[mpc_horizon_length];
+  double slack_t_max[mpc_horizon_length];
+  double slack_b_max[mpc_horizon_length];
+  double slack_u_ddelta_radps_max[mpc_horizon_length];
+  double slack_u_ddelta_radps_min[mpc_horizon_length];
+  double slack_u_dt_max[mpc_horizon_length];
+  double slack_u_dt_min[mpc_horizon_length];
+  double slack_u_db_max[mpc_horizon_length];
+  double slack_u_db_min[mpc_horizon_length];
+  // nonlinear
+  double slack_acc_lim_1[mpc_horizon_length];
+  double slack_acc_lim_2[mpc_horizon_length];
+  double slack_acc_lim_3[mpc_horizon_length];
+  double slack_acc_lim_4[mpc_horizon_length];
+  double slack_acc_lim_5[mpc_horizon_length];
+  double slack_acc_lim_6[mpc_horizon_length];
+  double slack_acc_lim_7[mpc_horizon_length];
+  double slack_acc_lim_8[mpc_horizon_length];
 };
 };  // namespace tam::types::control

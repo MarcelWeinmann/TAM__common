@@ -14,4 +14,5 @@ from tum_types_py._control_binding import (  # noqa: F401
     AdditionalTrajectoryInfos,  # noqa: F401
     ICECommand,  # noqa: F401
     DriveTrainFeedback,  # noqa: F401
+    AdditionalEspTargets,
 )  # noqa: F401

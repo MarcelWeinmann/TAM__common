@@ -1,5 +1,17 @@
 // Copyright 2023 Simon Hoffmann
 #pragma once
+
+// If you’re building the library itself, define BUILDING_CURVILINEAR_COSY (e.g.
+// -DBUILDING_CURVILINEAR_COSY) Clients get the “error” attribute; the library build does not.
+#if !defined(BUILDING_CURVILINEAR_COSY) && (defined(__GNUC__) || defined(__clang__))
+#define CCS_DEPRECATED_API                                          \
+  __attribute__((error(                                             \
+    "get_3d_from_2d and project_2d_point_on_track are deprecated; " \
+    "use _global or _window implementations instead")))
+#else
+#define CCS_DEPRECATED_API
+#endif
+
 #include <eigen3/Eigen/Dense>
 #include <iostream>
 #include <map>
@@ -28,17 +40,30 @@ private:
   tam::helpers::cosy::CurvilinearCosySharedPtr cosy_;
   std::unique_ptr<TrackData> data_;
 
+  // ───────────────────────────────────────── Name of the preloaded handler (e.g. "left", "right",
+  // "pit")
+  std::string handler_name_;
+
   void init();
   void create_normal_vector();
   void create_trackbounds();
   void calc_d_omega();
+  void precompute_trig();
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   static std::unique_ptr<Track> create_from_csv(
     const std::string & path, TrackReferenceLines ref = TrackReferenceLines::RACELINE);
+  void set_handler_name(std::string name) { handler_name_ = std::move(name); }
+  const std::string & get_name() const { return handler_name_; }
   size_t length() const { return data_->data.at(TrackData::s).rows(); }
   bool on_track(const double x, const double y, const double margin) const;
+  bool on_track_global(
+    const double x, const double y, const double z, const double z_margin,
+    const double margin) const;
+  bool on_track_window(
+    const double x, const double y, const double z, const double s_start, const double s_end,
+    const double z_margin, const double margin) const;
   tam::helpers::cosy::CurvilinearCosySharedPtr get_cosy_handle() { return cosy_; }
   std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd> calc_apparent_acceleration(
     const Eigen::Ref<const Eigen::MatrixXd> s, const Eigen::Ref<const Eigen::MatrixXd> n,
@@ -47,6 +72,23 @@ public:
   std::tuple<double, double, double> calc_apparent_acceleration(
     const double s, const double n, const double chi, const double ax, const double ay,
     const double V) const;
+  std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd> calc_apparent_acceleration_index(
+    const Eigen::Ref<const Eigen::MatrixXd> s, const Eigen::Ref<const Eigen::MatrixXd> n,
+    const Eigen::Ref<const Eigen::MatrixXd> chi, const Eigen::Ref<const Eigen::MatrixXd> ax,
+    const Eigen::Ref<const Eigen::MatrixXd> ay, const Eigen::Ref<const Eigen::MatrixXd> V,
+    const Eigen::Ref<const Eigen::MatrixXi> idx) const;
+  std::tuple<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::MatrixXd>
+  calc_apparent_acceleration_index_fast(
+    const Eigen::Ref<const Eigen::MatrixXd> s, const Eigen::Ref<const Eigen::MatrixXd> n,
+    const Eigen::Ref<const Eigen::MatrixXd> chi, const Eigen::Ref<const Eigen::MatrixXd> ax,
+    const Eigen::Ref<const Eigen::MatrixXd> ay, const Eigen::Ref<const Eigen::MatrixXd> V,
+    const Eigen::Ref<const Eigen::MatrixXi> idx) const;
+  std::tuple<double, double, double> calc_apparent_acceleration_index(
+    const double s, const double n, const double chi, const double ax, const double ay,
+    const double V, const int idx) const;
+  std::tuple<double, double, double> calc_apparent_acceleration_index_fast(
+    const double s, const double n, const double chi, const double ax, const double ay,
+    const double V, const int idx) const;
   std::tuple<Eigen::MatrixXd, Eigen::MatrixXd> calc_acceleration(
     const Eigen::Ref<const Eigen::MatrixXd> s, const Eigen::Ref<const Eigen::MatrixXd> chi,
     const Eigen::Ref<const Eigen::MatrixXd> ax_tilde,
@@ -56,21 +98,55 @@ public:
   Eigen::Vector3d sn2cartesian(const double s, const double n) const;
   Eigen::MatrixX3d sn2cartesian(
     const Eigen::Ref<const Eigen::VectorXd> s, const Eigen::Ref<const Eigen::VectorXd> n) const;
-  Eigen::Vector3d get_3d_from_2d(const double x, const double y) const;
-  Eigen::Vector2d project_2d_point_on_track(const double x, const double y) const;
-  Eigen::MatrixX2d project_2d_point_on_track(
-    Eigen::Ref<const Eigen::VectorXd> x, Eigen::Ref<const Eigen::VectorXd> y) const;
+  Eigen::Vector3d get_3d_from_2d_global(
+    const double x, const double y, const double z,
+    const double z_range = std::numeric_limits<double>::infinity()) const;
+  Eigen::Vector3d get_3d_from_2d_window(
+    const double x, const double y, const double z, const double s_start, const double s_end,
+    const double z_range = std::numeric_limits<double>::infinity()) const;
+  Eigen::Vector2d project_2d_point_on_track_global(
+    const double x, const double y, const double z,
+    const double z_range = std::numeric_limits<double>::infinity()) const;
+  Eigen::Vector2d project_2d_point_on_track_window(
+    const double x, const double y, const double z, const double s_start, const double s_end,
+    const double z_range = std::numeric_limits<double>::infinity()) const;
+  Eigen::MatrixX2d project_2d_point_on_track_global(
+    Eigen::Ref<const Eigen::VectorXd> x, Eigen::Ref<const Eigen::VectorXd> y,
+    Eigen::Ref<const Eigen::VectorXd> z,
+    const double z_range = std::numeric_limits<double>::infinity()) const;
+  Eigen::MatrixX2d project_2d_point_on_track_window(
+    Eigen::Ref<const Eigen::VectorXd> x, Eigen::Ref<const Eigen::VectorXd> y,
+    Eigen::Ref<const Eigen::VectorXd> z, Eigen::Ref<const Eigen::VectorXd> s_start,
+    Eigen::Ref<const Eigen::VectorXd> s_end,
+    const double z_range = std::numeric_limits<double>::infinity()) const;
   double calc_2d_heading_from_chi(const double s, const double chi) const;
   Eigen::VectorXd calc_2d_heading_from_chi(
     const Eigen::Ref<const Eigen::VectorXd> s, const Eigen::Ref<const Eigen::VectorXd> chi) const;
-  Eigen::Vector3d angles_to_velocity_frame(const double s, const double chi) const; 
+  Eigen::Vector3d angles_to_velocity_frame(const double s, const double chi) const;
   Eigen::MatrixXd angles_to_velocity_frame(
     const Eigen::Ref<const Eigen::VectorXd> s, const Eigen::Ref<const Eigen::VectorXd> chi) const;
   double calc_chi_from_2d_heading(const double s, const double heading) const;
   Eigen::VectorXd calc_chi_from_2d_heading(
     const Eigen::Ref<const Eigen::VectorXd> s,
     const Eigen::Ref<const Eigen::VectorXd> heading) const;
-  std::tuple <int, double> get_sector(const double s, const int num_sectors) const;
+  std::tuple<int, double> get_sector(const double s, const int num_sectors) const;
+  // Deprecated: clients will get a hard compile‐time error at the call site
+  CCS_DEPRECATED_API
+  Eigen::Vector3d get_3d_from_2d(const double x, const double y) const;
+  CCS_DEPRECATED_API
+  Eigen::Vector2d project_2d_point_on_track(const double x, const double y) const;
+  CCS_DEPRECATED_API
+  Eigen::MatrixX2d project_2d_point_on_track(
+    Eigen::Ref<const Eigen::VectorXd> x, Eigen::Ref<const Eigen::VectorXd> y) const;
+  struct SBasedMargins
+  {
+    std::vector<float> margin_left;
+    std::vector<float> margin_right;
+    std::vector<float> v_add;
+  };
+  SBasedMargins s_based_limits(std::string path, std::size_t index_length, float rate = 0.0) const;
+  double track_length() const;
+  float v_max_rl(std::string path) const;
   // Data Access
   const Eigen::Ref<Eigen::VectorXd> s_coord() const { return data_->data.at(TrackData::s); }
   const Eigen::Ref<Eigen::VectorXd> ref_line_x() const { return data_->data.at(TrackData::x); }
@@ -131,6 +207,82 @@ public:
   const Eigen::Ref<Eigen::VectorXd> trackwidth_right() const
   {
     return data_->data.at(TrackData::w_right);
+  }
+  const Eigen::Ref<Eigen::VectorXd> trackwidth_left_s_based() const
+  {
+    return data_->data.at(TrackData::w_left_s_based);
+  }
+  const Eigen::Ref<Eigen::VectorXd> trackwidth_right_s_based() const
+  {
+    return data_->data.at(TrackData::w_right_s_based);
+  }
+  const Eigen::Ref<Eigen::VectorXd> trackwidth_right_ssa() const
+  {
+    return data_->data.at(TrackData::w_right_ssa);
+  }
+  const Eigen::Ref<Eigen::VectorXd> trackwidth_left_ssa() const
+  {
+    return data_->data.at(TrackData::w_left_ssa);
+  }
+  const Eigen::Ref<Eigen::VectorXd> trackwidth_right_ssa_s_based() const
+  {
+    return data_->data.at(TrackData::w_right_ssa_s_based);
+  }
+  const Eigen::Ref<Eigen::VectorXd> trackwidth_left_ssa_s_based() const
+  {
+    return data_->data.at(TrackData::w_left_ssa_s_based);
+  }
+  const Eigen::Ref<Eigen::VectorXd> trackwidth_right_sda() const
+  {
+    return data_->data.at(TrackData::w_right_sda);
+  }
+  const Eigen::Ref<Eigen::VectorXd> trackwidth_left_sda() const
+  {
+    return data_->data.at(TrackData::w_left_sda);
+  }
+  const Eigen::Ref<Eigen::VectorXd> trackwidth_right_sda_s_based() const
+  {
+    return data_->data.at(TrackData::w_right_sda_s_based);
+  }
+  const Eigen::Ref<Eigen::VectorXd> trackwidth_left_sda_s_based() const
+  {
+    return data_->data.at(TrackData::w_left_sda_s_based);
+  }
+  const Eigen::Ref<Eigen::VectorXd> theta_sin() const
+  {
+    return data_->data.at(TrackData::theta_sin);
+  }
+  const Eigen::Ref<Eigen::VectorXd> theta_cos() const
+  {
+    return data_->data.at(TrackData::theta_cos);
+  }
+  const Eigen::Ref<Eigen::VectorXd> mu_sin() const { return data_->data.at(TrackData::mu_sin); }
+  const Eigen::Ref<Eigen::VectorXd> mu_cos() const { return data_->data.at(TrackData::mu_cos); }
+  const Eigen::Ref<Eigen::VectorXd> phi_sin() const { return data_->data.at(TrackData::phi_sin); }
+  const Eigen::Ref<Eigen::VectorXd> phi_cos() const { return data_->data.at(TrackData::phi_cos); }
+  const Eigen::Ref<Eigen::VectorXd> tangent_x() const
+  {
+    return data_->data.at(TrackData::tangent_x);
+  }
+  const Eigen::Ref<Eigen::VectorXd> tangent_y() const
+  {
+    return data_->data.at(TrackData::tangent_y);
+  }
+  const Eigen::Ref<Eigen::VectorXd> tangent_z() const
+  {
+    return data_->data.at(TrackData::tangent_z);
+  }
+  const Eigen::Ref<Eigen::VectorXd> binormal_x() const
+  {
+    return data_->data.at(TrackData::binormal_x);
+  }
+  const Eigen::Ref<Eigen::VectorXd> binormal_y() const
+  {
+    return data_->data.at(TrackData::binormal_y);
+  }
+  const Eigen::Ref<Eigen::VectorXd> binormal_z() const
+  {
+    return data_->data.at(TrackData::binormal_z);
   }
   // Templated getters for interpolated access
   /**
@@ -758,6 +910,206 @@ public:
     return tam::helpers::numerical::interp(
       s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
       data_->data.at(TrackData::w_right));
+  }
+  /**
+   * @brief Get track_width_left_s_based interpolated with s
+   *
+   * @param s
+   * @return Eigen::MatrixXd
+   */
+  Eigen::MatrixXd trackwidth_left_s_based(const Eigen::Ref<const Eigen::MatrixXd> s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_left_s_based));
+  }
+  std::vector<double> trackwidth_left_s_based(const std::vector<double> & s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_left_s_based));
+  }
+  double trackwidth_left_s_based(const double & s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_left_s_based));
+  }
+  /**
+   * @brief Get track_width_right_s_based interpolated with s
+   *
+   * @param s
+   * @return Eigen::MatrixXd
+   */
+  Eigen::MatrixXd trackwidth_right_s_based(const Eigen::Ref<const Eigen::MatrixXd> s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_right_s_based));
+  }
+  std::vector<double> trackwidth_right_s_based(const std::vector<double> & s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_right_s_based));
+  }
+  double trackwidth_right_s_based(const double & s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_right_s_based));
+  }
+  // w_right_ssa
+  Eigen::MatrixXd trackwidth_right_ssa(const Eigen::Ref<const Eigen::MatrixXd> s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_right_ssa));
+  }
+  std::vector<double> trackwidth_right_ssa(const std::vector<double> & s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_right_ssa));
+  }
+  double trackwidth_right_ssa(const double & s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_right_ssa));
+  }
+  // w_left_ssa
+  Eigen::MatrixXd trackwidth_left_ssa(const Eigen::Ref<const Eigen::MatrixXd> s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_left_ssa));
+  }
+  std::vector<double> trackwidth_left_ssa(const std::vector<double> & s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_left_ssa));
+  }
+  double trackwidth_left_ssa(const double & s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_left_ssa));
+  }
+  // w_right_ssa_s_based
+  Eigen::MatrixXd trackwidth_right_ssa_s_based(const Eigen::Ref<const Eigen::MatrixXd> s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_right_ssa_s_based));
+  }
+  std::vector<double> trackwidth_right_ssa_s_based(const std::vector<double> & s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_right_ssa_s_based));
+  }
+  double trackwidth_right_ssa_s_based(const double & s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_right_ssa_s_based));
+  }
+  // w_left_ssa_s_based
+  Eigen::MatrixXd trackwidth_left_ssa_s_based(const Eigen::Ref<const Eigen::MatrixXd> s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_left_ssa_s_based));
+  }
+  std::vector<double> trackwidth_left_ssa_s_based(const std::vector<double> & s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_left_ssa_s_based));
+  }
+  double trackwidth_left_ssa_s_based(const double & s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_left_ssa_s_based));
+  }
+  // w_right_sda
+  Eigen::MatrixXd trackwidth_right_sda(const Eigen::Ref<const Eigen::MatrixXd> s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_right_sda));
+  }
+  std::vector<double> trackwidth_right_sda(const std::vector<double> & s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_right_sda));
+  }
+  double trackwidth_right_sda(const double & s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_right_sda));
+  }
+  // w_left_sda
+  Eigen::MatrixXd trackwidth_left_sda(const Eigen::Ref<const Eigen::MatrixXd> s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_left_sda));
+  }
+  std::vector<double> trackwidth_left_sda(const std::vector<double> & s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_left_sda));
+  }
+  double trackwidth_left_sda(const double & s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_left_sda));
+  }
+  // w_right_sda_s_based
+  Eigen::MatrixXd trackwidth_right_sda_s_based(const Eigen::Ref<const Eigen::MatrixXd> s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_right_sda_s_based));
+  }
+  std::vector<double> trackwidth_right_sda_s_based(const std::vector<double> & s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_right_sda_s_based));
+  }
+  double trackwidth_right_sda_s_based(const double & s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_right_sda_s_based));
+  }
+  // w_left_sda_s_based
+  Eigen::MatrixXd trackwidth_left_sda_s_based(const Eigen::Ref<const Eigen::MatrixXd> s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_left_sda_s_based));
+  }
+  std::vector<double> trackwidth_left_sda_s_based(const std::vector<double> & s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_left_sda_s_based));
+  }
+  double trackwidth_left_sda_s_based(const double & s) const
+  {
+    return tam::helpers::numerical::interp(
+      s_mod(s, data_->data.at(TrackData::s)(Eigen::last)), data_->data.at(TrackData::s),
+      data_->data.at(TrackData::w_left_sda_s_based));
   }
 };
 }  // namespace tam::common

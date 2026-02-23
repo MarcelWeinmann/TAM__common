@@ -1,7 +1,7 @@
 // Copyright 2024 Simon Sagmeister
 #include <dynamic_node_composition/types.hpp>
 #include <dynamic_node_composition/utils.hpp>
-namespace tam::dynamic_compositon::utils
+namespace tam::dynamic_composition::utils
 {
 std::string get_shared_library_path(ComponentDescription const & comp)
 {
@@ -26,15 +26,4 @@ std::string get_shared_library_path(ComponentDescription const & comp)
   }
   return library_path;
 }
-rclcpp::Node::SharedPtr create_node_from_library(
-  std::string library_path, std::string class_name, rclcpp::NodeOptions options)
-{
-  auto loader = std::make_unique<class_loader::ClassLoader>(library_path);
-  class_name = "rclcpp_components::NodeFactoryTemplate<" + class_name + ">";
-  std::shared_ptr<rclcpp_components::NodeFactory> node_factory =
-    loader->createInstance<rclcpp_components::NodeFactory>(class_name);
-  // rclcpp has to be initialized otherwise this line gives a runtime error
-  rclcpp_components::NodeInstanceWrapper wrapper = node_factory->create_node_instance(options);
-  return std::static_pointer_cast<rclcpp::Node>(wrapper.get_node_instance());
-}
-}  // namespace tam::dynamic_compositon::utils
+}  // namespace tam::dynamic_composition::utils

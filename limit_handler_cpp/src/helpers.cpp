@@ -261,23 +261,4 @@ tam::types::control::ControlConstraintsPolygon interp_control_constraints(
   out.header = constraints.header;
   return out;
 }
-void update_dynamic_constraints(
-  tam::types::control::ControlConstraintsPolygon * const control_constraints_ptr,
-  const double v_mps, const double kappa_max_steering_1pm, const double P_VDC_MinVelSlipCalc_mps)
-{
-  // max lat acc imposed by max steering angle (kinematic model); a_y = kappa*v^2
-  double a_y_lim_delta =
-    kappa_max_steering_1pm * std::pow(std::max(v_mps, P_VDC_MinVelSlipCalc_mps), 2);
-
-  for (auto contr_constr_pt_vec : control_constraints_ptr->points) {
-    for (auto constr_pt : contr_constr_pt_vec.a_lim) {
-      // clip lateral accs based on steering angle
-      constr_pt.y = tam::helpers::numerical::clip_absolute(constr_pt.y, a_y_lim_delta);
-      // low speed: scale down positive long. acc limit points
-      if (v_mps < P_VDC_MinVelSlipCalc_mps && constr_pt.x > 0) {
-        constr_pt.x /= 3;
-      }
-    }
-  }
-}
 }  // namespace tam::limits

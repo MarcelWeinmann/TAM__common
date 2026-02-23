@@ -10,7 +10,7 @@ target_link_libraries(udpreceiver ${PROJECT_NAME})
 ament_target_dependencies(udpreceiver rclcpp tum_msgs nav_msgs)
 
 add_executable(min_status_publisher "samples/tam_sender_receiver/minimal_status_publisher.cpp")
-ament_target_dependencies(min_status_publisher rclcpp tum_msgs nav_msgs)
+ament_target_dependencies(min_status_publisher rclcpp tum_msgs nav_msgs tum_ros_helpers_cpp)
 
 add_executable(tamsender "samples/tam_sender_receiver/tam_test_sender.cpp")
 target_link_libraries(tamsender ${PROJECT_NAME})

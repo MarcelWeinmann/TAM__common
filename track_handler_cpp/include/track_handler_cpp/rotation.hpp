@@ -68,41 +68,42 @@ inline Eigen::VectorXd calc_2d_heading_from_chi(
   }
   return heading;
 }
-
-inline Eigen::Vector3d angles_to_velocity_frame(const double chi, const double theta, const double mu, const double phi){
-  Eigen::Vector3d basis_vel_in_road_x (std::cos(chi), std::sin(chi), 0.0); 
-  Eigen::Vector3d basis_vel_in_road_y (-std::sin(chi), std::cos(chi), 0.0); 
-  Eigen::Vector3d basis_vel_in_road_z (0.0, 0.0, 1.0); 
+inline Eigen::Vector3d angles_to_velocity_frame(
+  const double chi, const double theta, const double mu, const double phi)
+{
+  Eigen::Vector3d basis_vel_in_road_x(std::cos(chi), std::sin(chi), 0.0);
+  Eigen::Vector3d basis_vel_in_road_y(-std::sin(chi), std::cos(chi), 0.0);
+  Eigen::Vector3d basis_vel_in_road_z(0.0, 0.0, 1.0);
 
   // representation of basis vectors (velocity frame) in intertial frame
-  Eigen::Vector3d vel_global_x = (get_rotation_matrix(theta, mu, phi) * basis_vel_in_road_x).normalized(); 
-  Eigen::Vector3d vel_global_y = (get_rotation_matrix(theta, mu, phi) * basis_vel_in_road_y).normalized(); 
-  Eigen::Vector3d vel_global_z = (get_rotation_matrix(theta, mu, phi) * basis_vel_in_road_z).normalized(); 
+  Eigen::Vector3d vel_global_x =
+    (get_rotation_matrix(theta, mu, phi) * basis_vel_in_road_x).normalized();
+  Eigen::Vector3d vel_global_y =
+    (get_rotation_matrix(theta, mu, phi) * basis_vel_in_road_y).normalized();
+  Eigen::Vector3d vel_global_z =
+    (get_rotation_matrix(theta, mu, phi) * basis_vel_in_road_z).normalized();
 
-  Eigen::Matrix3d vel_global; 
-  vel_global.col(0) = vel_global_x; 
-  vel_global.col(1) = vel_global_y; 
-  vel_global.col(2) = vel_global_z; 
-  Eigen::Vector3d euler_angle = vel_global.eulerAngles(2, 1, 0); 
+  Eigen::Matrix3d vel_global;
+  vel_global.col(0) = vel_global_x;
+  vel_global.col(1) = vel_global_y;
+  vel_global.col(2) = vel_global_z;
+  Eigen::Vector3d euler_angle = vel_global.eulerAngles(2, 1, 0);
 
-  return euler_angle;  
+  return euler_angle;
 }
-
-
-inline Eigen::MatrixXd angles_to_velocity_frame (
+inline Eigen::MatrixXd angles_to_velocity_frame(
   const Eigen::Ref<const Eigen::VectorXd> chi, const Eigen::Ref<const Eigen::VectorXd> theta,
   const Eigen::Ref<const Eigen::VectorXd> mu, const Eigen::Ref<const Eigen::VectorXd> phi)
-  {
-    Eigen::MatrixXd euler_angles(chi.size(), 3); 
+{
+  Eigen::MatrixXd euler_angles(chi.size(), 3);
 
-    for(int i = 0; i < static_cast<int>(chi.size()); ++i){
-      Eigen::Vector3d euler_angle = angles_to_velocity_frame(chi[i], theta[i], mu[i], phi[i]); 
-      euler_angles.row(i) = euler_angle; 
-    }
-    
-    return euler_angles; 
+  for (int i = 0; i < static_cast<int>(chi.size()); ++i) {
+    Eigen::Vector3d euler_angle = angles_to_velocity_frame(chi[i], theta[i], mu[i], phi[i]);
+    euler_angles.row(i) = euler_angle;
   }
 
+  return euler_angles;
+}
 /**
  * \brief
  *

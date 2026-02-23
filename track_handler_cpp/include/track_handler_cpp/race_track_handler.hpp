@@ -4,6 +4,8 @@
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "param_management_cpp/param_value_manager.hpp"
@@ -17,12 +19,16 @@ class RaceTrackHandler
 {
 public:
   /**
-   * @brief Creates a RaceTrackHandler with the config provided in
-   * track_handler_cpp/config_overwrite
+   * @brief Creates a RaceTrackHandler using either the package default
+   *        config_overwrite path (when overwrite_root is empty) or a custom one.
    *
+   * @param overwrite_root Optional custom root containing "config.yml" and "<TrackName>/..."
    * @return std::unique_ptr<RaceTrackHandler>
+   * @throws std::invalid_argument if a non-empty overwrite_root does not exist or is not a
+   * directory
    */
-  static std::unique_ptr<RaceTrackHandler> from_pkg_config();
+  static std::unique_ptr<RaceTrackHandler> from_pkg_config(
+    const std::filesystem::path & overwrite_root = {});
   /**
    * @brief Create a track object. Depending on track_handler_cpp/config_overwrite, a different
    * Track is loaded
@@ -37,7 +43,7 @@ public:
    *
    * @return std::unique_ptr<Track>
    */
-  std::unique_ptr<Track> create_track() const;
+  std::unique_ptr<Track> create_track();
   /**
    * @brief DEPRECATED: use create_raceline_track()
    * Create a track object. Depending on track_handler_cpp/config_overwrite, a different
@@ -52,7 +58,7 @@ public:
    *
    * @return std::unique_ptr<Track>
    */
-  std::unique_ptr<Track> create_raceline_track() const;
+  std::unique_ptr<Track> create_raceline_track();
   /**
    * @brief Create a track object that has a CENTERLINE as reference line. ATTENTIONE: Do not use
    * for calculations with raceline!
@@ -90,11 +96,24 @@ public:
   std::unique_ptr<Raceline> create_raceline_prediction() const;
   /**
    * @brief Create a raceline object. Depending on track_handler_cpp/config_overwrite, a different
-   * Raceline is loaded
+   * Raceline is loaded. Also ensures a preloaded "main" handler exists in raceline_handlers_.
    *
    * @return std::unique_ptr<Raceline>
    */
-  std::unique_ptr<Raceline> create_raceline() const;
+  std::unique_ptr<Raceline> create_raceline();
+
+  /**
+   * @brief (Deprecated) Const wrapper for create_raceline().
+   */
+  [[deprecated("Use the non-const overload create_raceline().")]] std::unique_ptr<Raceline>
+  create_raceline() const;
+  /**
+   * @brief Create a raceline object for the pitlane. Depending on
+   * track_handler_cpp/config_overwrite, a different Raceline is loaded
+   *
+   * @return std::unique_ptr<Raceline>
+   */
+  std::unique_ptr<Raceline> create_raceline_pitlane() const;
   /**
    * @brief Returns the current Track-Key (e.g. Vegas, Monza, etc,)
    *
@@ -125,7 +144,7 @@ public:
    * @return csv. filename of pit
    */
   std::string return_raceline_path() const;
-    /**
+  /**
    * @brief Returns the path of the .csv file which is loaded as Raceline
    *
    * @return csv. pathname of raceline
@@ -137,7 +156,7 @@ public:
    * @return csv. filename of raceline
    */
   std::string return_pitlane_path() const;
-      /**
+  /**
    * @brief Returns the path of the .csv file which is loaded as Pitlane
    *
    * @return csv. pathname of pitlane
@@ -189,6 +208,48 @@ public:
    */
   tam::pmg::ParameterValue get_param(const std::string & param_name) const;
 
+  /**
+   * @brief Returns a preloaded Track instance for a given raceline directory (e.g. "left", "right",
+   * "pit")
+   *
+   * @return std::shared_ptr<Track>
+   */
+  std::shared_ptr<Track> get_track_handler(const std::string & name) const;
+  /**
+   * @brief Returns a preloaded Raceline instance for a given raceline directory (e.g. "left",
+   * "right", "pit")
+   *
+   * @return std::shared_ptr<Raceline>
+   */
+  std::shared_ptr<Raceline> get_raceline_handler(const std::string & name) const;
+  /**
+   * @brief Returns a preloaded CENTERLINE-based Track instance for a given raceline directory (e.g.
+   * "left", "right", "pit")
+   *
+   * @return std::shared_ptr<Track>
+   */
+  std::shared_ptr<Track> get_track_handler_centerline(const std::string & name) const;
+
+  // ───────────────────────────────────────── New: list available handlers
+  // ─────────────────────────────────────────
+  /**
+   * @brief List all available raceline-based Track handlers created by from_pkg_config().
+   *        The handler's internal get_name() gives its identifier (e.g. "pit", "left").
+   *
+   * @return vector of shared_ptr<Track>
+   */
+  std::vector<std::shared_ptr<Track>> list_track_handlers() const;
+
+  /**
+   * @brief List all available Raceline objects created by from_pkg_config().
+   *        The handler's internal get_name() gives its identifier (e.g. "pit", "left").
+   *
+   * @return vector of shared_ptr<Raceline>
+   */
+  std::vector<std::shared_ptr<Raceline>> list_raceline_handlers() const;
+  // race_track_handler.cpp — add this method definition
+  std::filesystem::path get_config_overwrite_path() const { return overwrite_path; }
+
 private:
   RaceTrackHandler();
   std::filesystem::path overwrite_path;
@@ -200,6 +261,9 @@ private:
     std::unique_ptr<RaceTrackHandler> & th, const std::string & config_folder);
   static void load_track_name(
     std::unique_ptr<RaceTrackHandler> & th, const std::string & config_folder);
+
+  std::unordered_map<std::string, std::shared_ptr<Track>> track_handlers_;
+  std::unordered_map<std::string, std::shared_ptr<Raceline>> raceline_handlers_;
+  std::unordered_map<std::string, std::shared_ptr<Track>> centerline_track_handlers_;
 };
 }  // namespace tam::common
-// Validate Raceline and Track with comment

@@ -6,6 +6,10 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+#include "diagnostic_msgs/msg/diagnostic_array.hpp"
+#include "message_filters/subscriber.h"
+#include "message_filters/time_synchronizer.h"
 namespace tam::core
 {
 struct TimeoutDescriptor
@@ -30,9 +34,11 @@ class TopicWatchdog
 {
 private:
   rclcpp::Node * node;
-  std::vector<std::shared_ptr<TimeoutDescriptor>> watched_callbacks;
+  std::vector<std::shared_ptr<TimeoutDescriptor>> watched_callbacks{};
   // Just store them so they don't go out of scope
-  std::vector<rclcpp::SubscriptionBase::SharedPtr> created_ros_subs;
+  std::vector<rclcpp::SubscriptionBase::SharedPtr> created_ros_subs{};
+  std::vector<std::shared_ptr<void>> created_msg_filter_subs{};
+  std::vector<std::shared_ptr<void>> created_synchronizers{};
 
 public:
   void check_timeouts();
@@ -68,7 +74,7 @@ public:
   }
   template <typename T, typename CallbackT>
   typename rclcpp::Subscription<T>::SharedPtr add_subscription(
-    std::string topic, const rclcpp::QoS & qos, CallbackT && subscription_callback,
+    const std::string & topic, const rclcpp::QoS & qos, CallbackT && subscription_callback,
     std::function<void(bool, std::chrono::milliseconds)> timeout_callback,
     std::chrono::milliseconds timeout)
   {
@@ -106,6 +112,47 @@ public:
     this->watched_callbacks.emplace_back(timeout_descriptor);
 
     return ros_sub;
+  }
+  template <typename T>
+  typename std::shared_ptr<message_filters::Subscriber<T>> add_synced_subscription(
+    const std::string & topic, const rclcpp::QoS & qos)
+  {
+    auto sub_topic = std::make_shared<message_filters::Subscriber<T>>(
+      node, topic, qos.get_rmw_qos_profile());  // NOLINT
+
+    created_msg_filter_subs.push_back(sub_topic);
+    return sub_topic;
+  }
+  template <typename T, typename CallbackT>
+  typename std::shared_ptr<
+    message_filters::TimeSynchronizer<T, diagnostic_msgs::msg::DiagnosticArray>>
+  register_synced_callback(
+    std::shared_ptr<message_filters::Subscriber<T>> & topic_sub,
+    std::shared_ptr<message_filters::Subscriber<diagnostic_msgs::msg::DiagnosticArray>> & diag_sub,
+    CallbackT && callback, std::function<void(bool, std::chrono::milliseconds)> timeout_callback,
+    std::chrono::milliseconds timeout, const uint32_t queue_size = 1)
+  {
+    // Create struct now so it can be referenced in subscription callback
+    auto timeout_descriptor = std::make_shared<TimeoutDescriptor>(
+      TimeoutDescriptor{timeout_callback, timeout, this->node->get_clock()->now()});
+
+    auto sync =
+      std::make_shared<message_filters::TimeSynchronizer<T, diagnostic_msgs::msg::DiagnosticArray>>(
+        *topic_sub, *diag_sub, queue_size);
+
+    auto callback_wrapper =
+      [this, timeout_descriptor, callback](
+        const typename T::ConstSharedPtr & msg,
+        const diagnostic_msgs::msg::DiagnosticArray::ConstSharedPtr & diag_msg) {
+        timeout_descriptor->last_update = this->node->get_clock()->now();
+        return callback(msg, diag_msg);
+      };
+    sync->registerCallback(
+      std::bind(callback_wrapper, std::placeholders::_1, std::placeholders::_2));
+
+    created_synchronizers.push_back(sync);
+    this->watched_callbacks.emplace_back(timeout_descriptor);
+    return sync;
   }
   using SharedPtr = std::shared_ptr<tam::core::TopicWatchdog>;
   using UniquePtr = std::unique_ptr<tam::core::TopicWatchdog>;

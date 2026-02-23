@@ -24,8 +24,7 @@ public:
    * @return double Longitudinal force
    */
   virtual double lon(
-    const double slip_ratio, const double slip_angle, const double F_z,
-    const T & params) const = 0;
+    const double slip_ratio, const double slip_angle, const double F_z, const T & params) const = 0;
   /**
    * @brief Definition for lateral force of tire
    * @param slip_ratio Slip ratio of the tire
@@ -35,8 +34,7 @@ public:
    * @return double Lateral force
    */
   virtual double lat(
-    const double slip_ratio, const double slip_angle, const double F_z,
-    const T & params) const = 0;
+    const double slip_ratio, const double slip_angle, const double F_z, const T & params) const = 0;
   /**
    * @brief Definition for self aligning torque of tire
    * @param slip_ratio Slip ratio of the tire
@@ -46,8 +44,7 @@ public:
    * @return double Self aligning torque
    */
   virtual double self_aligning(
-    const double slip_ratio, const double slip_angle, const double F_z,
-    const T & params) const = 0;
+    const double slip_ratio, const double slip_angle, const double F_z, const T & params) const = 0;
 
 public:
   // Destructor

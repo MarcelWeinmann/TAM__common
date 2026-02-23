@@ -1,39 +1,112 @@
+// Copyright 2026 TUMFTM
 #include <eigen3/Eigen/Dense>
+#include <memory>  // for std::shared_ptr
 
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
-
-// #include "tum_helpers_cpp/geometry/geometry.hpp"
-
 #include "track_handler_cpp/race_track_handler.hpp"
 #include "track_handler_cpp/raceline.hpp"
 #include "track_handler_cpp/track.hpp"
 
-// #include <pybind11/stl.h>
-// #include <tf2/LinearMath/Quaternion.h>
-// #include <tf2/LinearMath/Vector3.h>
-// // include "pybind11_test/test_struct.hpp"
-
 namespace py = pybind11;
 PYBIND11_MODULE(_cpp_binding, m)
 {
+  // Expose enum for reference line selection
   py::enum_<TrackReferenceLines>(m, "TrackReferenceLines")
     .value("RACELINE", TrackReferenceLines::RACELINE)
     .value("CENTERLINE", TrackReferenceLines::CENTERLINE);
-  py::class_<tam::common::RaceTrackHandler>(m, "RaceTrackHandler")
-    .def("from_pkg_config", &tam::common::RaceTrackHandler::from_pkg_config, "")
-    .def("create_track", &tam::common::RaceTrackHandler::create_track, "")
-    .def("create_raceline_track", &tam::common::RaceTrackHandler::create_raceline_track, "")
-    .def("create_centerline_track", &tam::common::RaceTrackHandler::create_centerline_track, "")
-    .def("create_pitlane", &tam::common::RaceTrackHandler::create_pitlane, "")
-    .def("create_raceline", &tam::common::RaceTrackHandler::create_raceline, "")
-    .def("create_track_prediction", &tam::common::RaceTrackHandler::create_track_prediction, "")
-    .def("create_raceline_track_prediction", &tam::common::RaceTrackHandler::create_raceline_track_prediction, "")
-    .def("create_centerline_track_prediction", &tam::common::RaceTrackHandler::create_centerline_track_prediction, "")
-    .def("create_pitlane_prediction", &tam::common::RaceTrackHandler::create_pitlane_prediction, "")
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // RaceTrackHandler
+  //  - Keep binding GLOBAL (module_local(false)) so other modules can reuse it
+  //  - from_pkg_config stays as-is (returns unique_ptr<RaceTrackHandler>)
+  //  - Track/Raceline factory methods are wrapped to return std::shared_ptr
+  // ─────────────────────────────────────────────────────────────────────────────
+  py::class_<tam::common::RaceTrackHandler>(m, "RaceTrackHandler", py::module_local(false))
+    .def_static(
+      "from_pkg_config",
+      [](const std::string & overwrite_root) {
+        return tam::common::RaceTrackHandler::from_pkg_config(
+          std::filesystem::path(overwrite_root));
+      },
+      py::arg("overwrite_root") = std::string(""))
+
+    // Wrap Track factories (unique_ptr -> shared_ptr) to match Track's shared holder
     .def(
-      "create_raceline_prediction", &tam::common::RaceTrackHandler::create_raceline_prediction, "")
+      "create_track",
+      [](tam::common::RaceTrackHandler & self) {
+        auto up = self.create_track();
+        return std::shared_ptr<tam::common::Track>(std::move(up));
+      },
+      "")
+    .def(
+      "create_raceline_track",
+      [](tam::common::RaceTrackHandler & self) {
+        auto up = self.create_raceline_track();
+        return std::shared_ptr<tam::common::Track>(std::move(up));
+      },
+      "")
+    .def(
+      "create_centerline_track",
+      [](tam::common::RaceTrackHandler & self) {
+        auto up = self.create_centerline_track();
+        return std::shared_ptr<tam::common::Track>(std::move(up));
+      },
+      "")
+    .def(
+      "create_pitlane",
+      [](tam::common::RaceTrackHandler & self) {
+        auto up = self.create_pitlane();
+        return std::shared_ptr<tam::common::Track>(std::move(up));
+      },
+      "")
+    .def(
+      "create_track_prediction",
+      [](tam::common::RaceTrackHandler & self) {
+        auto up = self.create_track_prediction();
+        return std::shared_ptr<tam::common::Track>(std::move(up));
+      },
+      "")
+    .def(
+      "create_raceline_track_prediction",
+      [](tam::common::RaceTrackHandler & self) {
+        auto up = self.create_raceline_track_prediction();
+        return std::shared_ptr<tam::common::Track>(std::move(up));
+      },
+      "")
+    .def(
+      "create_centerline_track_prediction",
+      [](tam::common::RaceTrackHandler & self) {
+        auto up = self.create_centerline_track_prediction();
+        return std::shared_ptr<tam::common::Track>(std::move(up));
+      },
+      "")
+    .def(
+      "create_pitlane_prediction",
+      [](tam::common::RaceTrackHandler & self) {
+        auto up = self.create_pitlane_prediction();
+        return std::shared_ptr<tam::common::Track>(std::move(up));
+      },
+      "")
+
+    // Raceline factories (mirror Track: unique_ptr -> shared_ptr)
+    .def(
+      "create_raceline",
+      [](tam::common::RaceTrackHandler & self) {
+        auto up = self.create_raceline();  // unique_ptr<Raceline>
+        return std::shared_ptr<tam::common::Raceline>(std::move(up));
+      },
+      "")
+    .def(
+      "create_raceline_prediction",
+      [](tam::common::RaceTrackHandler & self) {
+        auto up = self.create_raceline_prediction();  // unique_ptr<Raceline>
+        return std::shared_ptr<tam::common::Raceline>(std::move(up));
+      },
+      "")
+
+    // Misc getters
     .def("get_track_name", &tam::common::RaceTrackHandler::get_track_name, "")
     .def("get_track_file", &tam::common::RaceTrackHandler::get_track_file, "")
     .def("return_raceline_path", &tam::common::RaceTrackHandler::return_raceline_path, "")
@@ -51,8 +124,19 @@ PYBIND11_MODULE(_cpp_binding, m)
     .def(
       "get_raceline_path_default", &tam::common::RaceTrackHandler::get_raceline_path_default, "");
 
-  py::class_<tam::common::Raceline>(m, "Raceline")
-    .def("create_from_csv", &tam::common::Raceline::create_from_csv)
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Raceline (track_handler's Raceline; use shared_ptr holder like Track)
+  // ─────────────────────────────────────────────────────────────────────────────
+  py::class_<tam::common::Raceline, std::shared_ptr<tam::common::Raceline>>(
+    m, "Raceline", py::module_local(false))
+    .def_static(
+      "create_from_csv",
+      [](const std::string & path) {
+        auto up = tam::common::Raceline::create_from_csv(path);
+        return std::shared_ptr<tam::common::Raceline>(std::move(up));
+      },
+      py::arg("path"))
+
     .def("s", &tam::common::Raceline::s)
     .def("v", [](tam::common::Raceline & rl) { return rl.v(); })
     .def("v", [](tam::common::Raceline & rl, const double & a) { return rl.v(a); })
@@ -102,8 +186,27 @@ PYBIND11_MODULE(_cpp_binding, m)
       return rl.jy(a);
     });
 
-  py::class_<tam::common::Track>(m, "Track")
-    .def("create_from_csv", &tam::common::Track::create_from_csv, py::arg("ref") = TrackReferenceLines::RACELINE)
+  // Expose Track::SBasedMargins globally
+  py::class_<tam::common::Track::SBasedMargins>(m, "SBasedMargins", py::module_local(false))
+    .def_readwrite("margin_left", &tam::common::Track::SBasedMargins::margin_left)
+    .def_readwrite("margin_right", &tam::common::Track::SBasedMargins::margin_right)
+    .def_readwrite("v_add", &tam::common::Track::SBasedMargins::v_add);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Track
+  //  - CRITICAL: use std::shared_ptr holder and make binding GLOBAL
+  //  - Wrap create_from_csv (unique_ptr -> shared_ptr)
+  // ─────────────────────────────────────────────────────────────────────────────
+  py::class_<tam::common::Track, std::shared_ptr<tam::common::Track>>(
+    m, "Track", py::module_local(false))
+    .def_static(
+      "create_from_csv",
+      [](const std::string & path, TrackReferenceLines ref) {
+        auto up = tam::common::Track::create_from_csv(path, ref);
+        return std::shared_ptr<tam::common::Track>(std::move(up));
+      },
+      py::arg("path"), py::arg("ref") = TrackReferenceLines::RACELINE)
+
     .def("length", &tam::common::Track::length)
     .def("on_track", &tam::common::Track::on_track)
     .def("get_cosy_handle", &tam::common::Track::get_cosy_handle)
@@ -139,13 +242,44 @@ PYBIND11_MODULE(_cpp_binding, m)
       "sn2cartesian",
       py::overload_cast<Eigen::Ref<const Eigen::VectorXd>, Eigen::Ref<const Eigen::VectorXd>>(
         &tam::common::Track::sn2cartesian, py::const_))
+    //  .def("sn2cartesian",
+    //       [](tam::common::Track &self,
+    //           const Eigen::Ref<const Eigen::VectorXd> &s,
+    //           const Eigen::Ref<const Eigen::VectorXd> &n) {
+    //           // Eigen returns an (N x 3) column-major matrix by value
+    //           Eigen::MatrixX3d M = self.sn2cartesian(s, n);
+
+    //           // Create a C-contiguous NumPy array and copy with layout conversion
+    //           py::array_t<double> out({ (py::ssize_t)M.rows(), (py::ssize_t)M.cols() });
+    //           Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>>
+    //                map(out.mutable_data(), M.rows(), M.cols());
+    //           map = M;  // copies while converting from col-major -> row-major
+
+    //           return out;  // NumPy owns this buffer; no capsules/deleters needed
+    //      })
     .def(
-      "project_2d_point_on_track", py::overload_cast<const double, const double>(
-                                     &tam::common::Track::project_2d_point_on_track, py::const_))
+      "project_2d_point_on_track_window",
+      py::overload_cast<
+        const double, const double, const double, const double, const double, const double>(
+        &tam::common::Track::project_2d_point_on_track_window, py::const_))
     .def(
-      "project_2d_point_on_track",
-      py::overload_cast<Eigen::Ref<const Eigen::VectorXd>, Eigen::Ref<const Eigen::VectorXd>>(
-        &tam::common::Track::project_2d_point_on_track, py::const_))
+      "project_2d_point_on_track_window",
+      py::overload_cast<
+        Eigen::Ref<const Eigen::VectorXd>, Eigen::Ref<const Eigen::VectorXd>,
+        Eigen::Ref<const Eigen::VectorXd>, Eigen::Ref<const Eigen::VectorXd>,
+        Eigen::Ref<const Eigen::VectorXd>, const double>(
+        &tam::common::Track::project_2d_point_on_track_window, py::const_))
+
+    .def(
+      "project_2d_point_on_track_global",
+      py::overload_cast<const double, const double, const double, const double>(
+        &tam::common::Track::project_2d_point_on_track_global, py::const_))
+    .def(
+      "project_2d_point_on_track_global",
+      py::overload_cast<
+        Eigen::Ref<const Eigen::VectorXd>, Eigen::Ref<const Eigen::VectorXd>,
+        Eigen::Ref<const Eigen::VectorXd>, const double>(
+        &tam::common::Track::project_2d_point_on_track_global, py::const_))
 
     .def(
       "calc_2d_heading_from_chi", py::overload_cast<const double, const double>(
@@ -155,14 +289,16 @@ PYBIND11_MODULE(_cpp_binding, m)
       py::overload_cast<
         const Eigen::Ref<const Eigen::VectorXd>, const Eigen::Ref<const Eigen::VectorXd>>(
         &tam::common::Track::calc_2d_heading_from_chi, py::const_))
+
     .def(
       "angles_to_velocity_frame", py::overload_cast<const double, const double>(
                                     &tam::common::Track::angles_to_velocity_frame, py::const_))
     .def(
-       "angles_to_velocity_frame",
-       py::overload_cast<
-         const Eigen::Ref<const Eigen::VectorXd>, const Eigen::Ref<const Eigen::VectorXd>>(
-         &tam::common::Track::angles_to_velocity_frame, py::const_))
+      "angles_to_velocity_frame",
+      py::overload_cast<
+        const Eigen::Ref<const Eigen::VectorXd>, const Eigen::Ref<const Eigen::VectorXd>>(
+        &tam::common::Track::angles_to_velocity_frame, py::const_))
+
     .def(
       "calc_chi_from_2d_heading", py::overload_cast<const double, const double>(
                                     &tam::common::Track::calc_chi_from_2d_heading, py::const_))
@@ -174,6 +310,7 @@ PYBIND11_MODULE(_cpp_binding, m)
 
     .def("get_sector", &tam::common::Track::get_sector, "")
     .def("s_coord", &tam::common::Track::s_coord, "")
+
     .def("ref_line_x", [](tam::common::Track & rl) { return rl.ref_line_x(); })
     .def("ref_line_x", [](tam::common::Track & rl, const double & a) { return rl.ref_line_x(a); })
     .def(
@@ -181,6 +318,7 @@ PYBIND11_MODULE(_cpp_binding, m)
       [](tam::common::Track & rl, const py::EigenDRef<const Eigen::MatrixXd> & a) {
         return rl.ref_line_x(a);
       })
+
     .def("ref_line_y", [](tam::common::Track & rl) { return rl.ref_line_y(); })
     .def("ref_line_y", [](tam::common::Track & rl, const double & a) { return rl.ref_line_y(a); })
     .def(
@@ -196,6 +334,7 @@ PYBIND11_MODULE(_cpp_binding, m)
       [](tam::common::Track & rl, const py::EigenDRef<const Eigen::MatrixXd> & a) {
         return rl.ref_line_z(a);
       })
+
     .def("theta", [](tam::common::Track & rl) { return rl.theta(); })
     .def("theta", [](tam::common::Track & rl, const double & a) { return rl.theta(a); })
     .def(
@@ -239,34 +378,30 @@ PYBIND11_MODULE(_cpp_binding, m)
     .def("d_phi", [](tam::common::Track & rl) { return rl.d_phi(); })
     .def("d_phi", [](tam::common::Track & rl, const double & a) { return rl.d_phi(a); })
     .def(
-      "d_phi",
-      [](tam::common::Track & rl, const py::EigenDRef<const Eigen::MatrixXd> & a) {
-        return rl.d_phi(a);
-      })
+      "d_phi", [](
+                 tam::common::Track & rl,
+                 const py::EigenDRef<const Eigen::MatrixXd> & a) { return rl.d_phi(a); })
 
     .def("omega_x", [](tam::common::Track & rl) { return rl.omega_x(); })
     .def("omega_x", [](tam::common::Track & rl, const double & a) { return rl.omega_x(a); })
     .def(
-      "omega_x",
-      [](tam::common::Track & rl, const py::EigenDRef<const Eigen::MatrixXd> & a) {
-        return rl.omega_x(a);
-      })
+      "omega_x", [](
+                   tam::common::Track & rl,
+                   const py::EigenDRef<const Eigen::MatrixXd> & a) { return rl.omega_x(a); })
 
     .def("omega_y", [](tam::common::Track & rl) { return rl.omega_y(); })
     .def("omega_y", [](tam::common::Track & rl, const double & a) { return rl.omega_y(a); })
     .def(
-      "omega_y",
-      [](tam::common::Track & rl, const py::EigenDRef<const Eigen::MatrixXd> & a) {
-        return rl.omega_y(a);
-      })
+      "omega_y", [](
+                   tam::common::Track & rl,
+                   const py::EigenDRef<const Eigen::MatrixXd> & a) { return rl.omega_y(a); })
 
     .def("omega_z", [](tam::common::Track & rl) { return rl.omega_z(); })
     .def("omega_z", [](tam::common::Track & rl, const double & a) { return rl.omega_z(a); })
     .def(
-      "omega_z",
-      [](tam::common::Track & rl, const py::EigenDRef<const Eigen::MatrixXd> & a) {
-        return rl.omega_z(a);
-      })
+      "omega_z", [](
+                   tam::common::Track & rl,
+                   const py::EigenDRef<const Eigen::MatrixXd> & a) { return rl.omega_z(a); })
 
     .def("left_bound_x", [](tam::common::Track & rl) { return rl.left_bound_x(); })
     .def(
@@ -385,5 +520,11 @@ PYBIND11_MODULE(_cpp_binding, m)
       "trackwidth_right",
       [](tam::common::Track & rl, const py::EigenDRef<const Eigen::MatrixXd> & a) {
         return rl.trackwidth_right(a);
-      });
+      })
+
+    .def(
+      "s_based_limits", &tam::common::Track::s_based_limits, py::arg(), py::arg(),
+      py::arg("rate") = 0.0, "")
+    .def("track_length", &tam::common::Track::track_length, "")
+    .def("v_max_rl", &tam::common::Track::v_max_rl, "");
 }

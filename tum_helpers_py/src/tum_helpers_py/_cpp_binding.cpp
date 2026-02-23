@@ -22,27 +22,73 @@ namespace py = pybind11;
 PYBIND11_MODULE(_cpp_binding, m)
 {
   py::class_<tam::helpers::cosy::CurvilinearCosy>(m, "CurvilinearCosy")
+    // .def(
+    //   "convert_to_sn", py::overload_cast<const double, const double>(
+    //                      &tam::helpers::cosy::CurvilinearCosy::convert_to_sn, py::const_))
+    // .def(
+    //   "convert_to_sn", py::overload_cast<const double, const double, const double>(
+    //                      &tam::helpers::cosy::CurvilinearCosy::convert_to_sn, py::const_))
+    // .def(
+    //   "convert_to_sn", py::overload_cast<const tam::types::control::Odometry &>(
+    //                      &tam::helpers::cosy::CurvilinearCosy::convert_to_sn, py::const_))
     .def(
-      "convert_to_sn", py::overload_cast<const double, const double>(
-                         &tam::helpers::cosy::CurvilinearCosy::convert_to_sn, py::const_))
+      "convert_to_sn_window_2d",
+      py::overload_cast<
+        const double, const double, const double, const double, const double, const double>(
+        &tam::helpers::cosy::CurvilinearCosy::convert_to_sn_window_2d, py::const_))
     .def(
-      "convert_to_sn", py::overload_cast<const double, const double, const double>(
-                         &tam::helpers::cosy::CurvilinearCosy::convert_to_sn, py::const_))
+      "convert_to_sn_window",
+      py::overload_cast<
+        const double, const double, const double, const double, const double, const double,
+        const double>(&tam::helpers::cosy::CurvilinearCosy::convert_to_sn_window, py::const_))
     .def(
-      "convert_to_sn", py::overload_cast<const tam::types::control::Odometry &>(
-                         &tam::helpers::cosy::CurvilinearCosy::convert_to_sn, py::const_))
+      "convert_to_sn_window",
+      py::overload_cast<
+        const tam::types::control::Odometry &, const double, const double, const double>(
+        &tam::helpers::cosy::CurvilinearCosy::convert_to_sn_window, py::const_))
     .def(
-      "convert_to_sn_and_get_idx",
-      py::overload_cast<const double, const double>(
-        &tam::helpers::cosy::CurvilinearCosy::convert_to_sn_and_get_idx, py::const_))
+      "convert_to_sn_global_2d",
+      py::overload_cast<const double, const double, const double, const double>(
+        &tam::helpers::cosy::CurvilinearCosy::convert_to_sn_global_2d, py::const_))
     .def(
-      "convert_to_sn_and_get_idx",
-      py::overload_cast<const double, const double, const double>(
-        &tam::helpers::cosy::CurvilinearCosy::convert_to_sn_and_get_idx, py::const_))
+      "convert_to_sn_global",
+      py::overload_cast<const double, const double, const double, const double, const double>(
+        &tam::helpers::cosy::CurvilinearCosy::convert_to_sn_global, py::const_))
     .def(
-      "convert_to_sn_and_get_idx",
-      py::overload_cast<const tam::types::control::Odometry &>(
-        &tam::helpers::cosy::CurvilinearCosy::convert_to_sn_and_get_idx, py::const_))
+      "convert_to_sn_global",
+      py::overload_cast<const tam::types::control::Odometry &, const double>(
+        &tam::helpers::cosy::CurvilinearCosy::convert_to_sn_global, py::const_))
+    // .def(
+    //   "convert_to_sn_and_get_idx",
+    //   py::overload_cast<const double, const double>(
+    //     &tam::helpers::cosy::CurvilinearCosy::convert_to_sn_and_get_idx, py::const_))
+    // .def(
+    //   "convert_to_sn_and_get_idx",
+    //   py::overload_cast<const double, const double, const double>(
+    //     &tam::helpers::cosy::CurvilinearCosy::convert_to_sn_and_get_idx, py::const_))
+    // .def(
+    //   "convert_to_sn_and_get_idx",
+    //   py::overload_cast<const tam::types::control::Odometry &>(
+    //     &tam::helpers::cosy::CurvilinearCosy::convert_to_sn_and_get_idx, py::const_))
+    .def(
+      "convert_to_sn_and_get_idx_window",
+      py::overload_cast<
+        const double, const double, const double, const double, const double, const double,
+        const double>(
+        &tam::helpers::cosy::CurvilinearCosy::convert_to_sn_and_get_idx_window, py::const_))
+    .def(
+      "convert_to_sn_and_get_idx_window",
+      py::overload_cast<
+        const tam::types::control::Odometry &, const double, const double, const double>(
+        &tam::helpers::cosy::CurvilinearCosy::convert_to_sn_and_get_idx_window, py::const_))
+    .def(
+      "convert_to_sn_and_get_idx_global",
+      py::overload_cast<const double, const double, const double, const double, const double>(
+        &tam::helpers::cosy::CurvilinearCosy::convert_to_sn_and_get_idx_global, py::const_))
+    .def(
+      "convert_to_sn_and_get_idx_global",
+      py::overload_cast<const tam::types::control::Odometry &, const double>(
+        &tam::helpers::cosy::CurvilinearCosy::convert_to_sn_and_get_idx_global, py::const_))
 
     .def(
       "convert_to_cartesian",
@@ -125,15 +171,23 @@ PYBIND11_MODULE(_cpp_binding, m)
     "eval_model",
     py::overload_cast<
       const tam::types::common::Vector3D<double> &, const tam::types::vehicle_params::Aero &>(
-      &tam::helpers::aeordynamics::eval_model));
+      &tam::helpers::aerodynamics::eval_model));
   m.def(
     "dynamic_tire_radius",
     py::overload_cast<
       const double, const tam::types::common::DataPerWheel<tam::types::tire_params::Tire> &>(
       &tam::helpers::vehicle_dynamics::dynamic_tire_radius));
   m.def(
-    "slip_angle",
+    "long_slip",
     py::overload_cast<
       const tam::types::control::Odometry &, const double,
-      const tam::types::vehicle_params::Dimension &>(&tam::helpers::vehicle_dynamics::slip_angle));
+      const tam::types::common::DataPerWheel<double> &,
+      const tam::types::common::DataPerWheel<tam::types::tire_params::Tire> &,
+      const tam::types::vehicle_params::Dimension &>(&tam::helpers::vehicle_dynamics::long_slip));
+  m.def(
+    "slip_angle", py::overload_cast<
+                    const tam::types::control::Odometry &, const double,
+                    const tam::types::vehicle_params::Dimension &,
+                    const tam::types::common::DataPerWheel<tam::types::tire_params::Tire> &>(
+                    &tam::helpers::vehicle_dynamics::slip_angle));
 }

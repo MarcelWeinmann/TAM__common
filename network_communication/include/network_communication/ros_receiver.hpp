@@ -6,6 +6,7 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
+#include <tum_ros_helpers_cpp/qos.hpp>
 #include <vector>
 
 using std::placeholders::_1;
@@ -37,7 +38,7 @@ public:
   {
     auto receiver = udp_receiver_list_.emplace_back(std::make_shared<Receiver>());
     receiver->net_receiver = std::move(protocol_strategy);
-    receiver->ros_publisher = node->create_publisher<T>(topic, 1);
+    receiver->ros_publisher = node->create_publisher<T>(topic, tam::ros::get_qos());
     receiver->thread =
       std::make_unique<std::thread>(&RosReceiver::net_msg_received<T>, this, receiver);
     receiver->topic = topic;

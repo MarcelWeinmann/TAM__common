@@ -5,6 +5,24 @@
 // https://gitlab.lrz.de/tum-cps/commonroad-drivability-checker/-/tree/master/cpp/geometry
 //
 #pragma once
+
+// If you’re building the library itself, define BUILDING_CURVILINEAR_COSY (e.g.
+// -DBUILDING_CURVILINEAR_COSY) Clients get the “error” attribute; the library build does not.
+#if !defined(BUILDING_CURVILINEAR_COSY) && (defined(__GNUC__) || defined(__clang__))
+#define CCS_DEPRECATED_API                                         \
+  __attribute__((error(                                            \
+    "convert_to_sn_and_get_idx and convert_to_sn are deprecated; " \
+    "use _global or _window member functions instead.")))
+#else
+#define CCS_DEPRECATED_API
+#endif
+
+// #if !defined(BUILDING_CURVILINEAR_COSY)
+//   // forbid any use of those old names in downstream code:
+//   #pragma GCC poison convert_to_sn_and_get_idx
+//   #pragma GCC poison convert_to_sn
+// #endif
+
 #include <algorithm>
 #include <eigen3/Eigen/Dense>
 #include <memory>
@@ -34,17 +52,49 @@ public:
   {
     return std::make_unique<CurvilinearCosyBuilder>(std::forward<Params>(params)...);
   }
-  Eigen::Vector2d convert_to_sn(const double x, const double y) const;
-  Eigen::Vector3d convert_to_sn(const double x, const double y, const double yaw) const;
-  Eigen::Vector3d convert_to_sn(const tam::types::control::Odometry & odom) const;
-  std::tuple<Eigen::Vector2d, float> convert_to_sn_and_get_idx(
-    const double x, const double y) const;
-  std::tuple<Eigen::Vector3d, float> convert_to_sn_and_get_idx(
-    const tam::types::control::Odometry & odom) const;
-  std::tuple<Eigen::Vector3d, float> convert_to_sn_and_get_idx(
-    const double x, const double y, const double yaw) const;
+  Eigen::Vector2d convert_to_sn_global_2d(
+    const double x, const double y, const double z,
+    const double z_range = std::numeric_limits<double>::infinity()) const;
+  Eigen::Vector3d convert_to_sn_global(
+    const double x, const double y, const double z, const double yaw,
+    const double z_range = std::numeric_limits<double>::infinity()) const;
+  Eigen::Vector3d convert_to_sn_global(
+    const tam::types::control::Odometry & odom,
+    const double z_range = std::numeric_limits<double>::infinity()) const;
+  Eigen::Vector2d convert_to_sn_window_2d(
+    const double x, const double y, const double z, const double s_start, const double s_end,
+    const double z_range = std::numeric_limits<double>::infinity()) const;
+  Eigen::Vector3d convert_to_sn_window(
+    const double x, const double y, const double z, const double yaw, const double s_start,
+    const double s_end, const double z_range = std::numeric_limits<double>::infinity()) const;
+  Eigen::Vector3d convert_to_sn_window(
+    const tam::types::control::Odometry & odom, const double s_start, const double s_end,
+    const double z_range = std::numeric_limits<double>::infinity()) const;
+  std::tuple<Eigen::Vector2d, float> convert_to_sn_and_get_idx_global_2d(
+    const double x, const double y, const double z,
+    const double z_range = std::numeric_limits<double>::infinity()) const;
+  std::tuple<Eigen::Vector3d, float> convert_to_sn_and_get_idx_global(
+    const tam::types::control::Odometry & odom,
+    const double z_range = std::numeric_limits<double>::infinity()) const;
+  std::tuple<Eigen::Vector3d, float> convert_to_sn_and_get_idx_global(
+    const double x, const double y, const double z, const double yaw,
+    const double z_range = std::numeric_limits<double>::infinity()) const;
+  std::tuple<Eigen::Vector2d, float> convert_to_sn_and_get_idx_window_2d(
+    const double x, const double y, const double z, const double s_start, const double s_end,
+    const double z_range = std::numeric_limits<double>::infinity()) const;
+  std::tuple<Eigen::Vector3d, float> convert_to_sn_and_get_idx_window(
+    const tam::types::control::Odometry & odom, const double s_start, const double s_end,
+    const double z_range = std::numeric_limits<double>::infinity()) const;
+  std::tuple<Eigen::Vector3d, float> convert_to_sn_and_get_idx_window(
+    const double x, const double y, const double z, const double yaw, const double s_start,
+    const double s_end, const double z_range = std::numeric_limits<double>::infinity()) const;
+  std::tuple<Eigen::Vector3d, float> convert_to_sn_and_get_idx_base(
+    const double x, const double y, const double z, const double yaw, const double s_start,
+    const double s_end, const bool closed_search,
+    const double z_range = std::numeric_limits<double>::infinity()) const;
   Eigen::Vector2d convert_to_cartesian(const double s, const double d) const;
   Eigen::Vector3d convert_to_cartesian(const double s, const double d, const double yaw) const;
+  Eigen::Vector3d convert_to_cartesian_3d(const double s, const double d) const;
   bool is_closed() { return closed_cosy_; }
   double get_ref_line_length() const { return length_; }
   // Not required for binding
@@ -53,6 +103,24 @@ public:
   int get_number_of_segments() const { return segment_list_.size(); }
   Segment get_segment(const int idx) const { return segment_list_.at(idx); }
   //
+
+  // Deprecated: clients will get a hard compile‐time error at the call site
+  CCS_DEPRECATED_API
+  std::tuple<Eigen::Vector3d, float> convert_to_sn_and_get_idx(
+    const double x, const double y, const double yaw) const;
+  CCS_DEPRECATED_API
+  std::tuple<Eigen::Vector2d, float> convert_to_sn_and_get_idx(
+    const double x, const double y) const;
+  CCS_DEPRECATED_API
+  std::tuple<Eigen::Vector3d, float> convert_to_sn_and_get_idx(
+    const tam::types::control::Odometry & odom) const;
+  CCS_DEPRECATED_API
+  Eigen::Vector2d convert_to_sn(const double x, const double y) const;
+  CCS_DEPRECATED_API
+  Eigen::Vector3d convert_to_sn(const double x, const double y, const double yaw) const;
+  CCS_DEPRECATED_API
+  Eigen::Vector3d convert_to_sn(const tam::types::control::Odometry & odom) const;
+
 private:
   CurvilinearCosy() = default;
   std::optional<int> find_segment_index(double s) const;
@@ -62,6 +130,9 @@ private:
     const Eigen::Vector3d & pt_1, const Eigen::Vector3d & pt_2, const Eigen::Vector3d & t_1,
     const Eigen::Vector3d & t_2);
   int get_closest_point_id(const double x, const double y) const;
+  int get_closest_point_id_window(
+    const double x, const double y, const double z, const double s_start, const double s_end,
+    const double z_range = std::numeric_limits<double>::infinity()) const;
 
   std::vector<double> x_, y_, z_;
   std::vector<double> segment_s0_, segment_length_;
@@ -72,6 +143,9 @@ private:
   bool closed_cosy_{false};
   Segment extrapolate_front;
   Segment extrapolate_back;
+  // Just for warning - does not affect any logic - therfore made mutable
+  mutable bool convert_to_sn_extrapolation_warned_{false};
+  mutable bool convert_to_cartesian_extrapolation_warned_{false};
 };
 typedef std::unique_ptr<CurvilinearCosy> CurvilinearCosyPtr;
 typedef std::shared_ptr<CurvilinearCosy> CurvilinearCosySharedPtr;

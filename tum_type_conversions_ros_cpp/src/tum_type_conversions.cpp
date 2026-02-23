@@ -120,7 +120,11 @@ tam::types::control::Odometry odometry_type_from_imu_msg(sensor_msgs::msg::Imu c
   odometry.angular_velocity_radps.x = msg.angular_velocity.x;
   odometry.angular_velocity_radps.y = msg.angular_velocity.y;
   odometry.angular_velocity_radps.z = msg.angular_velocity.z;
-
+  for (size_t i = 0; i < 3; ++i) {
+    std::copy_n(
+      msg.angular_velocity_covariance.begin() + i * 3, 3,
+      odometry.velocity_covariance.begin() + (i + 3) * 6 + 3);
+  }
   return odometry;
 }
 tam::types::control::AccelerationwithCovariances acceleration_with_covariances_type_from_imu_msg(
@@ -130,7 +134,11 @@ tam::types::control::AccelerationwithCovariances acceleration_with_covariances_t
   acceleration.acceleration_mps2.x = msg.linear_acceleration.x;
   acceleration.acceleration_mps2.y = msg.linear_acceleration.y;
   acceleration.acceleration_mps2.z = msg.linear_acceleration.z;
-
+  for (size_t i = 0; i < 3; ++i) {
+    std::copy_n(
+      msg.linear_acceleration_covariance.begin() + i * 3, 3,
+      acceleration.acceleration_covariance.begin() + i * 6);
+  }
   return acceleration;
 }
 tam::types::control::Odometry odometry_type_from_msg(nav_msgs::msg::Odometry const & msg)
@@ -302,7 +310,7 @@ tam::types::prediction::TrackedObjects tracked_objects_type_from_msg(
   type_.objects.reserve(msg.objects.size());
   for (std::size_t i = 0; i < msg.objects.size(); i++) {
     tam::types::prediction::TrackedObject object_{};
-    object_.object_id = msg.objects.at(i).object_id.uuid.at(0);  // SPAX uuid
+    object_.object_id = msg.objects.at(i).object_id.uuid;
     object_.is_stationary = msg.objects.at(i).kinematics.is_stationary;
     object_.existence_probability = msg.objects.at(i).existence_probability;
     object_.orientation_rad =
@@ -356,7 +364,7 @@ autoware_auto_perception_msgs::msg::TrackedObjects tracked_objects_msg_from_type
       tracked_objects.objects.at(i).velocity_covariance;
     msg_obj_.kinematics.acceleration_with_covariance.covariance =
       tracked_objects.objects.at(i).acceleration_covariance;
-    msg_obj_.object_id.uuid.at(0) = tracked_objects.objects.at(i).object_id;
+    msg_obj_.object_id.uuid = tracked_objects.objects.at(i).object_id;
     msg_obj_.kinematics.is_stationary = tracked_objects.objects.at(i).is_stationary;
     msg_obj_.existence_probability = tracked_objects.objects.at(i).existence_probability;
     msg_.objects.emplace_back(msg_obj_);
@@ -370,57 +378,60 @@ autoware_auto_perception_msgs::msg::PredictedObjects predicted_objects_msg_from_
   msg_.objects.reserve(pred_objs.objects.size());
   msg_.header.stamp = header_stamp_msg_from_type(pred_objs.header.time_stamp_ns);
   msg_.header.frame_id = pred_objs.header.frame_id;
-  for (std::size_t i = 0; i < pred_objs.objects.size(); i++) {
-    autoware_auto_perception_msgs::msg::PredictedObject msg_obj_{};
-    msg_obj_.kinematics.predicted_paths.reserve(pred_objs.objects.at(i).predicted_paths.size());
-    msg_obj_.kinematics.initial_pose_with_covariance.pose.orientation =
-      tam::types::conversion::euler_type_to_quaternion_msg(tam::types::common::EulerYPR(
-        pred_objs.objects.at(i).tracked_object.get().orientation_rad.z,
-        pred_objs.objects.at(i).tracked_object.get().orientation_rad.y,
-        pred_objs.objects.at(i).tracked_object.get().orientation_rad.x));
-    msg_obj_.kinematics.initial_pose_with_covariance.pose.position =
-      point_msg_from_type(pred_objs.objects.at(i).tracked_object.get().position_m);
-    msg_obj_.kinematics.initial_twist_with_covariance.twist.angular =
-      vector_3d_msg_from_type(pred_objs.objects.at(i).tracked_object.get().angular_velocity_radps);
-    msg_obj_.kinematics.initial_twist_with_covariance.twist.linear =
-      vector_3d_msg_from_type(pred_objs.objects.at(i).tracked_object.get().velocity_mps);
-    msg_obj_.kinematics.initial_acceleration_with_covariance.accel.angular =
-      vector_3d_msg_from_type(
-        pred_objs.objects.at(i).tracked_object.get().angular_acceleration_radps2);
-    msg_obj_.kinematics.initial_acceleration_with_covariance.accel.linear =
-      vector_3d_msg_from_type(pred_objs.objects.at(i).tracked_object.get().acceleration_mps2);
-    msg_obj_.kinematics.initial_pose_with_covariance.covariance =
-      pred_objs.objects.at(i).tracked_object.get().pose_covariance;
-    msg_obj_.kinematics.initial_twist_with_covariance.covariance =
-      pred_objs.objects.at(i).tracked_object.get().velocity_covariance;
-    msg_obj_.kinematics.initial_acceleration_with_covariance.covariance =
-      pred_objs.objects.at(i).tracked_object.get().acceleration_covariance;
-    msg_obj_.object_id.uuid.at(0) = pred_objs.objects.at(i).tracked_object.get().object_id;
-    msg_obj_.existence_probability =
-      pred_objs.objects.at(i).tracked_object.get().existence_probability;
-    for (std::size_t j = 0; j < pred_objs.objects.at(i).predicted_paths.size(); j++) {
-      autoware_auto_perception_msgs::msg::PredictedPath msg_paths_{};
-      msg_paths_.path.reserve(pred_objs.objects.at(i).predicted_paths.at(j).path.size());
-      msg_paths_.confidence = pred_objs.objects.at(i).predicted_paths.at(j).confidence;
-      float time_step_temp = pred_objs.objects.at(i).predicted_paths.at(j).time_step_s;
-      msg_paths_.time_step.sec = floor(time_step_temp);
-      msg_paths_.time_step.nanosec = int(time_step_temp * 1e9) % (int)1e9;
-      for (std::size_t k = 0; k < pred_objs.objects.at(i).predicted_paths.at(j).path.size(); k++) {
-        geometry_msgs::msg::Pose msg_pose_{};
-        msg_pose_.position =
-          point_msg_from_type(pred_objs.objects.at(i).predicted_paths.at(j).path.at(k).position_m);
-        msg_pose_.orientation =
-          tam::types::conversion::euler_type_to_quaternion_msg(tam::types::common::EulerYPR(
-            pred_objs.objects.at(i).predicted_paths.at(j).path.at(k).orientation_rad.z,
-            pred_objs.objects.at(i).predicted_paths.at(j).path.at(k).orientation_rad.y,
-            pred_objs.objects.at(i).predicted_paths.at(j).path.at(k).orientation_rad.x));
-        msg_paths_.path.emplace_back(msg_pose_);
-      }
-      msg_obj_.kinematics.predicted_paths.emplace_back(msg_paths_);
-    }
-    msg_.objects.emplace_back(msg_obj_);
+  for (const auto & pred_obj : pred_objs.objects) {
+    msg_.objects.emplace_back(predicted_object_msg_from_type(pred_obj));
   }
   return msg_;
+}
+autoware_auto_perception_msgs::msg::PredictedObject predicted_object_msg_from_type(
+  const tam::types::prediction::PredictedObject & pred_obj)
+{
+  autoware_auto_perception_msgs::msg::PredictedObject msg_obj_{};
+  msg_obj_.kinematics.predicted_paths.reserve(pred_obj.predicted_paths.size());
+  msg_obj_.kinematics.initial_pose_with_covariance.pose.orientation =
+    tam::types::conversion::euler_type_to_quaternion_msg(tam::types::common::EulerYPR(
+      pred_obj.tracked_object.get().orientation_rad.z,
+      pred_obj.tracked_object.get().orientation_rad.y,
+      pred_obj.tracked_object.get().orientation_rad.x));
+  msg_obj_.kinematics.initial_pose_with_covariance.pose.position =
+    point_msg_from_type(pred_obj.tracked_object.get().position_m);
+  msg_obj_.kinematics.initial_twist_with_covariance.twist.angular =
+    vector_3d_msg_from_type(pred_obj.tracked_object.get().angular_velocity_radps);
+  msg_obj_.kinematics.initial_twist_with_covariance.twist.linear =
+    vector_3d_msg_from_type(pred_obj.tracked_object.get().velocity_mps);
+  msg_obj_.kinematics.initial_acceleration_with_covariance.accel.angular =
+    vector_3d_msg_from_type(pred_obj.tracked_object.get().angular_acceleration_radps2);
+  msg_obj_.kinematics.initial_acceleration_with_covariance.accel.linear =
+    vector_3d_msg_from_type(pred_obj.tracked_object.get().acceleration_mps2);
+  msg_obj_.kinematics.initial_pose_with_covariance.covariance =
+    pred_obj.tracked_object.get().pose_covariance;
+  msg_obj_.kinematics.initial_twist_with_covariance.covariance =
+    pred_obj.tracked_object.get().velocity_covariance;
+  msg_obj_.kinematics.initial_acceleration_with_covariance.covariance =
+    pred_obj.tracked_object.get().acceleration_covariance;
+  msg_obj_.object_id.uuid = pred_obj.tracked_object.get().object_id;
+  msg_obj_.existence_probability = pred_obj.tracked_object.get().existence_probability;
+  for (std::size_t j = 0; j < pred_obj.predicted_paths.size(); j++) {
+    autoware_auto_perception_msgs::msg::PredictedPath msg_paths_{};
+    msg_paths_.path.reserve(pred_obj.predicted_paths.at(j).path.size());
+    msg_paths_.confidence = pred_obj.predicted_paths.at(j).confidence;
+    float time_step_temp = pred_obj.predicted_paths.at(j).time_step_s;
+    msg_paths_.time_step.sec = floor(time_step_temp);
+    msg_paths_.time_step.nanosec = int(time_step_temp * 1e9) % (int)1e9;
+    for (std::size_t k = 0; k < pred_obj.predicted_paths.at(j).path.size(); k++) {
+      geometry_msgs::msg::Pose msg_pose_{};
+      msg_pose_.position =
+        point_msg_from_type(pred_obj.predicted_paths.at(j).path.at(k).position_m);
+      msg_pose_.orientation =
+        tam::types::conversion::euler_type_to_quaternion_msg(tam::types::common::EulerYPR(
+          pred_obj.predicted_paths.at(j).path.at(k).orientation_rad.z,
+          pred_obj.predicted_paths.at(j).path.at(k).orientation_rad.y,
+          pred_obj.predicted_paths.at(j).path.at(k).orientation_rad.x));
+      msg_paths_.path.emplace_back(msg_pose_);
+    }
+    msg_obj_.kinematics.predicted_paths.emplace_back(msg_paths_);
+  }
+  return msg_obj_;
 }
 tam::types::prediction::PredictedObjectsWithOwnedTrackedObjects predicted_objects_type_from_msg(
   const autoware_auto_perception_msgs::msg::PredictedObjects & msg)
@@ -450,7 +461,7 @@ tam::types::prediction::PredictedObjectsWithOwnedTrackedObjects predicted_object
       msg_obj.kinematics.initial_twist_with_covariance.covariance;
     pred_obj.tracked_object.acceleration_covariance =
       msg_obj.kinematics.initial_acceleration_with_covariance.covariance;
-    pred_obj.tracked_object.object_id = msg_obj.object_id.uuid.at(0);
+    pred_obj.tracked_object.object_id = msg_obj.object_id.uuid;
     pred_obj.tracked_object.existence_probability = msg_obj.existence_probability;
     pred_obj.predicted_paths.reserve(msg_obj.kinematics.predicted_paths.size());
     for (const auto & msg_path : msg_obj.kinematics.predicted_paths) {
@@ -486,8 +497,51 @@ tam::types::control::Odometry odometry_type_from_imu_msg(const sensor_msgs::msg:
 {
   return odometry_type_from_imu_msg(*msg);
 }
+tam::types::control::LongitudinalControlCommand longitudinal_command_type_from_msg(
+  const autoware_auto_control_msgs::msg::LongitudinalCommand & msg)
+{
+  tam::types::control::LongitudinalControlCommand pt_out;
+  pt_out.time_stamp_ns = msg.stamp.sec * 1e9 + msg.stamp.nanosec;
+  pt_out.velocity_mps = msg.speed;
+  pt_out.acceleration_mps2 = msg.acceleration;
+  pt_out.jerk_mps3 = msg.jerk;
+  return pt_out;
+}
+autoware_auto_control_msgs::msg::LongitudinalCommand longitudinal_command_msg_from_type(
+  const tam::types::control::LongitudinalControlCommand & longitudinal_command)
+{
+  autoware_auto_control_msgs::msg::LongitudinalCommand msg;
+  msg.stamp.nanosec = longitudinal_command.time_stamp_ns % static_cast<uint64_t>(1e9);
+  msg.stamp.sec = std::floor(longitudinal_command.time_stamp_ns / 1e9);
+  msg.speed = longitudinal_command.velocity_mps;
+  msg.acceleration = longitudinal_command.acceleration_mps2;
+  msg.jerk = longitudinal_command.jerk_mps3;
+  return msg;
+}
+tam::types::control::EnhancedLongitudinalControlCommand enhanced_longitudinal_command_type_from_msg(
+  const tum_msgs::msg::TUMEnhancedLongitudinalCommand & msg)
+{
+  tam::types::control::EnhancedLongitudinalControlCommand out;
+  out.time_stamp_ns = msg.stamp.sec * 1e9 + msg.stamp.nanosec;
+  out.points.reserve(msg.points.size());
+  for (const auto & pt : msg.points) {
+    out.points.push_back(longitudinal_command_type_from_msg(pt));
+  }
+  return out;
+}
+tum_msgs::msg::TUMEnhancedLongitudinalCommand enhanced_longitudinal_command_msg_from_type(
+  const tam::types::control::EnhancedLongitudinalControlCommand & enhanced_long_cmd)
+{
+  tum_msgs::msg::TUMEnhancedLongitudinalCommand msg;
+  msg.stamp.nanosec = enhanced_long_cmd.time_stamp_ns % static_cast<uint64_t>(1e9);
+  msg.stamp.sec = std::floor(enhanced_long_cmd.time_stamp_ns / 1e9);
+  msg.points.reserve(enhanced_long_cmd.points.size());
+  for (const auto & pt : enhanced_long_cmd.points) {
+    msg.points.push_back(longitudinal_command_msg_from_type(pt));
+  }
+  return msg;
+}
 }  // namespace tam::type_conversions
-// namespace tam::type_conversions
 namespace tam::type::conversions::cpp
 {
 tam::types::control::Trajectory Trajectory_type_from_msg(

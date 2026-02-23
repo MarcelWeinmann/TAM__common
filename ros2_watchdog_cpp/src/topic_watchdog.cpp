@@ -1,3 +1,4 @@
+// Copyright 2026 TUMFTM
 #include "ros2_watchdog_cpp/topic_watchdog.hpp"
 namespace tam::core
 {
