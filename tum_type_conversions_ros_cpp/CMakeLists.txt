@@ -20,6 +20,7 @@ find_package(tum_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(diagnostic_msgs REQUIRED)
 find_package(autoware_auto_perception_msgs REQUIRED)
+find_package(autoware_auto_control_msgs REQUIRED)
 
 add_library(${PROJECT_NAME} SHARED
   src/tum_type_conversions.cpp
@@ -45,6 +46,7 @@ ament_target_dependencies(
   sensor_msgs
   tum_types_cpp
   autoware_auto_perception_msgs
+  autoware_auto_control_msgs
 )
 
 install(
@@ -74,6 +76,7 @@ ament_export_dependencies(
   sensor_msgs
   tum_types_cpp
   autoware_auto_perception_msgs
+  autoware_auto_control_msgs
 ) # other dependencies so client does not need to call find_package on them
 
 

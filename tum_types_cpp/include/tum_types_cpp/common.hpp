@@ -10,6 +10,7 @@
 #include <regex>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "tum_types_cpp/data_per_wheel.hpp"
@@ -46,6 +47,13 @@ struct Vector3D
   {
     return Vector3D(x - other.x, y - other.y, z - other.z);
   }
+  Vector3D & operator+=(const Vector3D & other)
+  {
+    x += other.x;
+    y += other.y;
+    z += other.z;
+    return *this;
+  }
   // left multiplication with a factor
   friend Vector3D operator*(const double & factor, const Vector3D & obj)
   {
@@ -53,6 +61,13 @@ struct Vector3D
   }
   // right multiplication with a factor = left multiplication
   Vector3D operator*(const double & factor) const { return factor * (*this); }
+  // nan check
+  bool hasNaN() const
+  {
+    if constexpr (std::is_floating_point_v<T>)
+      return std::isnan(x) || std::isnan(y) || std::isnan(z);
+    return false;
+  }
 };
 template <typename T>
 struct Vector2D
@@ -74,6 +89,12 @@ struct Vector2D
   }
   // right multiplication with a factor = left multiplication
   Vector2D operator*(const double & factor) const { return factor * (*this); }
+  // nan check
+  bool hasNaN() const
+  {
+    if constexpr (std::is_floating_point_v<T>) return std::isnan(x) || std::isnan(y);
+    return false;
+  }
 };
 /* Euler Angles in rad. Axes of rotation:
 

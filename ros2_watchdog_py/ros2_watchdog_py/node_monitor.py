@@ -8,13 +8,16 @@ import diagnostic_msgs
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
 from tum_types_py.common import ErrorLvl
 from tum_type_conversions_ros_py.common import diagnostic_level_from_type
+from tum_ros_helpers_py.qos import get_qos
 
 
 class NodeMonitor:
     def __init__(self, node: Node) -> None:
         self.__node: Node = node
         self.__status_pub_ = self.__node.create_publisher(
-            DiagnosticStatus, "/core/orchestration/" + self.__node.get_name() + "_status", 1
+            DiagnosticStatus,
+            "/core/orchestration/" + self.__node.get_name() + "_status",
+            get_qos(),
         )
         self.__error_items_ = {}
         self.__key_value_map_ = {}
@@ -43,7 +46,7 @@ class NodeMonitor:
 
     def set_status_code(self, code: int) -> None:
         self.report_value("status_code", code)
-    
+
     def get_status_code(self) -> None:
         return self.__key_value_map_["status_code"]
 
@@ -54,7 +57,7 @@ class NodeMonitor:
         key = max(self.__error_items_, key=self.__error_items_.get)
         self.report_value("causing_key", key)
         return self.__error_items_[key]
-    
+
     def __get_key_value_msg(self) -> List[KeyValue]:
         key_value_list = []
         for item_key in self.__key_value_map_:

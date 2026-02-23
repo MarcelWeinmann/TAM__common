@@ -1,32 +1,32 @@
+// Copyright 2026 TUMFTM
 #include "can_comms_cpp/can_comms.hpp"
 
 using namespace std::chrono;
 tam::core::CanComms::CanComms(
-  rclcpp::Node * node,
-  std::function<void(can_msgs::msg::Frame::SharedPtr)> can_callback,
-  std::string interface,
-  bool use_can,
-  bool use_ros,
-  bool use_bus_time)
-: node(node), can_callback(can_callback), use_bus_time_{use_bus_time},
-  use_can_{use_can}, use_ros_{use_ros}
+  rclcpp::Node * node, std::function<void(can_msgs::msg::Frame::SharedPtr)> can_callback,
+  std::string interface, bool use_can, bool use_ros, bool use_bus_time, int buffer_size_kb)
+: node(node),
+  can_callback(can_callback),
+  use_bus_time_{use_bus_time},
+  use_can_{use_can},
+  use_ros_{use_ros}
 {
-  if(!use_can && !use_ros)
-  {
+  if (!use_can && !use_ros) {
     std::cerr << "Cannot disable both ROS and CAN at the same time!" << std::endl;
     throw std::runtime_error("no_comm_impossible");
   }
 
-  can_sender = std::make_unique<drivers::socketcan::SocketCanSender>(interface);
-  can_receiver = std::make_unique<drivers::socketcan::SocketCanReceiver>(interface);
+  can_sender = std::make_unique<drivers::socketcan::SocketCanSender>(
+    interface, false, drivers::socketcan::CanId{}, buffer_size_kb * 1024);
+  can_receiver = std::make_unique<drivers::socketcan::SocketCanReceiver>(
+    interface, false, buffer_size_kb * 1024);
 
-  if(use_ros)
-  {
+  if (use_ros) {
     backup_subscription_ = node->create_subscription<can_msgs::msg::Frame>(
       "/" + interface + "/compat/from_can_bus", 20, can_callback);
 
-    backup_publisher_ = node->create_publisher<can_msgs::msg::Frame>(
-      "/" + interface + "/compat/to_can_bus", 20);
+    backup_publisher_ =
+      node->create_publisher<can_msgs::msg::Frame>("/" + interface + "/compat/to_can_bus", 20);
   }
 
   if (use_can) {
@@ -56,8 +56,7 @@ void tam::core::CanComms::send_can_direct(can_msgs::msg::Frame::SharedPtr can_ms
       return;
     }
   }
-  if(use_ros_)
-  {
+  if (use_ros_) {
     this->backup_publisher_->publish(*can_msg);
   }
 }
@@ -79,9 +78,10 @@ void tam::core::CanComms::receive_can_direct()
       frame_msg.header.stamp =
         rclcpp::Time(static_cast<int64_t>(receive_id.get_bus_time() * 1000U));
     } else {
-      frame_msg.header.stamp = rclcpp::Time(std::chrono::duration_cast<std::chrono::nanoseconds>(
-        std::chrono::high_resolution_clock::now().time_since_epoch()
-      ).count());
+      frame_msg.header.stamp =
+        rclcpp::Time(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                       std::chrono::high_resolution_clock::now().time_since_epoch())
+                       .count());
     }
     frame_msg.id = receive_id.identifier();
     frame_msg.is_rtr = (receive_id.frame_type() == drivers::socketcan::FrameType::REMOTE);

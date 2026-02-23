@@ -1,0 +1,2 @@
+Topic Name                          ,Message Type                     ,Port
+/basestation/basy/connection_status ,tum_msgs/msg/TUMConnectionStatus ,50300

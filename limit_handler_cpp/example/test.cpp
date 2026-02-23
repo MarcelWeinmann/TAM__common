@@ -1,3 +1,4 @@
+// Copyright 2026 TUMFTM
 #include <map>
 
 #include "limit_handler_cpp/helpers.hpp"

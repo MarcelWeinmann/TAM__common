@@ -19,6 +19,15 @@ inline double normalize_angle(double angle_rad)
   if (angle_rad < 0) angle_rad += 2 * M_PI;
   return angle_rad - M_PI;
 }
+inline tam::types::common::Vector3D<double> normalize_angle(
+  tam::types::common::Vector3D<double> angle_rad)
+{
+  tam::types::common::Vector3D<double> angle_normalize_rad;
+  angle_normalize_rad.x = normalize_angle(angle_rad.x);
+  angle_normalize_rad.y = normalize_angle(angle_rad.y);
+  angle_normalize_rad.z = normalize_angle(angle_rad.z);
+  return angle_normalize_rad;
+}
 inline Eigen::MatrixXd normalize_angle(const Eigen::Ref<const Eigen::MatrixXd> angle_rad)
 {
   Eigen::MatrixXd angle_normalized(angle_rad.rows(), angle_rad.cols());
@@ -51,6 +60,38 @@ inline std::vector<double> calc_segment_length(const std::vector<double> & s)
   for (auto it = s.begin() + 1; it < s.end(); ++it) {
     out.push_back(std::abs(*it - *std::prev(it, 1)));
   }
+  return out;
+}
+inline std::vector<double> create_s_coordinate_from_points(
+  const std::vector<double> & x, std::vector<double> & y, std::vector<double> & z,
+  const std::vector<double> & curvature)
+{
+  std::vector<double> out;
+  out.reserve(x.size());
+  out.push_back(0.0);
+
+  double length{0.0};
+
+  for (std::int64_t i = 0; i < static_cast<int>(x.size() - 1); ++i) {
+    Eigen::Vector2d p1(x.at(i), y.at(i));
+    Eigen::Vector2d p2(x.at(i + 1), y.at(i + 1));
+    double chord_len = (p2 - p1).norm();
+
+    double kappa_avg = 0.5 * (curvature[i] + curvature[i + 1]);
+
+    double l_segment_2d{};
+    if (std::abs(kappa_avg) < 1e-6) {
+      l_segment_2d = chord_len;  // straight line fallback
+    } else {
+      double R = 1.0 / std::abs(kappa_avg);
+      double theta = 2.0 * std::asin(std::min(chord_len / (2 * R), 1.0));
+      l_segment_2d = R * theta;  // arc length
+    }
+    length += std::sqrt(std::pow(l_segment_2d, 2) + std::pow(z[i + 1] - z[i], 2));
+
+    out.push_back(length);  // arc length
+  }
+
   return out;
 }
 inline double euclidean_distance(const double x1, const double y1, const double x2, const double y2)

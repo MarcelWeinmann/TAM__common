@@ -50,7 +50,8 @@ inline bool ahead_of_ref(const double ref_s, const double s, const double s_max)
   return false;  // if not ahead -> behind
 }
 template <typename T>
-inline bool has_equal_sized_data(const T& data){
+inline bool has_equal_sized_data(const T & data)
+{
   for (size_t i = 0; i < data.size() - 1; i++) {
     if (data.at(i).size() != data.at(i + 1).size()) {
       return false;

@@ -13,3 +13,6 @@
 [submodule "submodules/autoware_msgs"]
 	path = submodules/autoware_msgs
 	url = https://github.com/autowarefoundation/autoware_msgs
+[submodule "submodules/ros2_socketcan"]
+	path = submodules/ros2_socketcan
+	url = https://github.com/ebnerdm/ros2_socketcan.git

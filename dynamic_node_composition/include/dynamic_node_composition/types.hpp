@@ -1,14 +1,19 @@
 // Copyright 2024 Simon Sagmeister
+#pragma once
 #include <stdexcept>
 #include <string>
-namespace tam::dynamic_compositon
+#include <vector>
+namespace tam::dynamic_composition
 {
 struct ComponentDescription
 {
   std::string package_name;
   std::string component_name;
-  ComponentDescription(std::string pkg_name, std::string cmpnt_name)
-  : package_name(pkg_name), component_name(cmpnt_name)
+  std::vector<std::string> component_arguments{};
+  ComponentDescription(
+    std::string const & pkg_name, std::string const & cmpnt_name,
+    std::vector<std::string> const & args)
+  : package_name(pkg_name), component_name(cmpnt_name), component_arguments(args)
   {
   }
 };
@@ -24,4 +29,4 @@ struct ComponentNotFound : public std::runtime_error
   }
 };
 }  // namespace exceptions
-}  // namespace tam::dynamic_compositon
+}  // namespace tam::dynamic_composition

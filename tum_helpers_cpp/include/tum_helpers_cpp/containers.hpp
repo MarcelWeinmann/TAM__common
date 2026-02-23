@@ -13,13 +13,13 @@ class function_queue
 public:
   /**
    * @brief Add a new function to the container
-   * 
+   *
    * @param func Function of type T
    */
   void push_back(std::function<T> func) { functions.push_back(func); }
   /**
    * @brief Execute all functions in the function_queue in the order of insertion.
-   * 
+   *
    */
   void call()
   {  // TODO(Simon): allow for input arguments
@@ -29,7 +29,7 @@ public:
   }
   /**
    * @brief Get the function queue object. Hence, std::function of call() method.
-   * 
+   *
    * @return std::function<T> of the call method.
    */
   std::function<T> get_function_queue() { return std::bind(&function_queue::call, this); }

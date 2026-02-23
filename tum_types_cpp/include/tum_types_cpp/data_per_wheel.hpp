@@ -12,7 +12,6 @@
 #ifdef TAM_TSL_BUILTIN_TYPE_SUPPORT_INCLUDED
 #error "Include tum_types before including tsl_logger_cpp"
 #endif
-
 namespace tam::types::common
 {
 template <typename T>

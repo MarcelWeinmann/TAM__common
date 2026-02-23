@@ -15,6 +15,57 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+
+# Portable arch flags (list elements, not a single string)
+set(SP_ARCH_OPTS
+  # $<$<NOT:$<CONFIG:Debug>>:-march=x86-64-v3>
+  # $<$<NOT:$<CONFIG:Debug>>:-mtune=znver3>
+)
+
+# Aggressive non-Debug opts (one genex per flag)
+# set(SP_FAST_OPTS
+#   $<$<NOT:$<CONFIG:Debug>>:-Ofast>
+#   $<$<NOT:$<CONFIG:Debug>>:-ffast-math>
+#   $<$<NOT:$<CONFIG:Debug>>:-fno-math-errno>
+#   $<$<NOT:$<CONFIG:Debug>>:-fno-trapping-math>
+#   $<$<NOT:$<CONFIG:Debug>>:-ffp-contract=fast>
+#   $<$<NOT:$<CONFIG:Debug>>:-finline-functions>
+#   $<$<NOT:$<CONFIG:Debug>>:-funroll-loops>
+#   $<$<NOT:$<CONFIG:Debug>>:-fpeel-loops>
+#   $<$<NOT:$<CONFIG:Debug>>:-funswitch-loops>
+#   $<$<NOT:$<CONFIG:Debug>>:-ftree-vectorize>
+#   $<$<NOT:$<CONFIG:Debug>>:-fvect-cost-model=very-cheap>
+#   $<$<NOT:$<CONFIG:Debug>>:-fomit-frame-pointer>
+#   # Per-compiler extras
+#   $<$<AND:$<NOT:$<CONFIG:Debug>>,$<CXX_COMPILER_ID:GNU>>:-frename-registers>
+#   $<$<AND:$<NOT:$<CONFIG:Debug>>,$<CXX_COMPILER_ID:GNU>>:-fira-loop-pressure>
+#   $<$<AND:$<NOT:$<CONFIG:Debug>>,$<CXX_COMPILER_ID:Clang>>:-mllvm>
+#   $<$<AND:$<NOT:$<CONFIG:Debug>>,$<CXX_COMPILER_ID:Clang>>:-inline-threshold=1000>
+#   $<$<AND:$<NOT:$<CONFIG:Debug>>,$<CXX_COMPILER_ID:Clang>>:-mllvm>
+#   $<$<AND:$<NOT:$<CONFIG:Debug>>,$<CXX_COMPILER_ID:Clang>>:-unroll-threshold=1000>
+# )
+
+set(SP_FAST_OPTS
+        $<$<NOT:$<CONFIG:Debug>>:-O3>
+        $<$<NOT:$<CONFIG:Debug>>:-DNDEBUG>
+        )
+
+# Optional Debug niceties (again: list, no quotes)
+set(SP_DEBUG_OPTS
+  $<$<CONFIG:Debug>:-O0>
+  $<$<CONFIG:Debug>:-g3>
+  $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
+)
+
+# set(SP_DEBUG_OPTS
+#   -O0
+#   -g3
+#   -fno-omit-frame-pointer
+# )
+
+# target_compile_options(${PROJECT_NAME} PRIVATE -O3 -fopenmp) #-dndebug -fno-math-errno -fopenmp)
+# target_compile_options(${PROJECT_NAME} PRIVATE ${SP_ARCH_OPTS} ${SP_FAST_OPTS} ${SP_DEBUG_OPTS})
+
 # Figure out Python3 debug/release before anything else can find_package it
 if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Debug")
   find_package(python_cmake_module REQUIRED)
@@ -42,6 +93,11 @@ ament_python_install_package(${PROJECT_NAME})
 pybind11_add_module(_cpp_binding SHARED
   src/${PROJECT_NAME}/_cpp_binding.cpp
 )
+
+target_compile_options(_cpp_binding PRIVATE
+  ${SP_ARCH_OPTS} ${SP_FAST_OPTS} ${SP_DEBUG_OPTS}
+)
+
 # ament_target_dependencies(_reindexer PUBLIC
 #   "rosbag2_cpp"
 #   "rosbag2_storage"

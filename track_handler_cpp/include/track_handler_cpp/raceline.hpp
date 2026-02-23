@@ -18,10 +18,13 @@ protected:
 
 private:
   std::unique_ptr<RacelineData> data_;
+  std::string handler_name_;
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   static std::unique_ptr<Raceline> create_from_csv(const std::string & path);
+  void set_handler_name(std::string name) { handler_name_ = std::move(name); }
+  const std::string & get_name() const { return handler_name_; }
   // Data Access
   const Eigen::Ref<Eigen::VectorXd> s() const { return data_->data.at(RacelineData::s); }
   const Eigen::Ref<Eigen::VectorXd> v() const { return data_->data.at(RacelineData::v); }

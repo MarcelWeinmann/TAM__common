@@ -1,3 +1,4 @@
+// Copyright 2026 TUMFTM
 #pragma once
 
 #include <memory>
@@ -34,16 +35,14 @@ public:
    * @param use_can Use CAN, disable if no CAN is available
    * @param use_ros Use ROS, disable for performance
    * @param use_bus_time Use timestamp from Bus, otherwise from ROS node
-   * 
+   *
    * CanComms need either CAN or ROS to be enabled to work the constructor will throw
    * an error if neither is enabled
    */
-  CanComms(rclcpp::Node * node,
-    std::function<void(can_msgs::msg::Frame::SharedPtr)> can_callback,
-    std::string interface,
-    bool use_can = true,
-    bool use_ros = false,
-    bool use_bus_time = false);
+  CanComms(
+    rclcpp::Node * node, std::function<void(can_msgs::msg::Frame::SharedPtr)> can_callback,
+    std::string interface, bool use_can = true, bool use_ros = false, bool use_bus_time = false,
+    int buffer_size_kb = 0);
 
 private:
   rclcpp::Node * node;
@@ -76,11 +75,11 @@ private:
    *
    * In some cases we would like to keep the same code, but only use ROS
    * because no CAN is physically/virtually present
-   * 
+   *
    * One the applications would be the tam/dSpace sim environment, where the actual CAN
-   * communication is modeled, but only via ROS and we do not have access to the hardware 
+   * communication is modeled, but only via ROS and we do not have access to the hardware
    * to add a virtual CAN Bus
-   * 
+   *
    * It is not intended to run our software locally with a virtual CAN Bus, since the whole
    * point is to contantly test the real functionality if possible
    */
@@ -88,10 +87,10 @@ private:
 
   /**
    * Variable to determine if ROS topic should be published
-   * 
+   *
    * In some cases we would like to not publish to ROS as it would overwhelm the system
    * and a candump is created as a backup anyways
-  */
+   */
   const bool use_ros_{false};
 
 public:

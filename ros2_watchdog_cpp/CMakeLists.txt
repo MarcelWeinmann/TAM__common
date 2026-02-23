@@ -9,21 +9,25 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(diagnostic_msgs REQUIRED)
+find_package(message_filters REQUIRED)
 find_package(tum_helpers_cpp REQUIRED)
 find_package(tum_types_cpp REQUIRED)
 find_package(tum_type_conversions_ros_cpp REQUIRED)
 find_package(param_management_cpp REQUIRED)
 find_package(param_management_ros2_integration_cpp REQUIRED)
+find_package(tum_ros_helpers_cpp REQUIRED)
 
 add_library(${PROJECT_NAME} SHARED
   src/topic_watchdog.cpp
   src/node_monitor.cpp
 )
 
-ament_target_dependencies(${PROJECT_NAME} rclcpp diagnostic_msgs param_management_ros2_integration_cpp tum_types_cpp tum_helpers_cpp param_management_cpp tum_type_conversions_ros_cpp)
+ament_target_dependencies(${PROJECT_NAME} rclcpp ament_index_cpp diagnostic_msgs sensor_msgs message_filters param_management_ros2_integration_cpp tum_types_cpp tum_helpers_cpp param_management_cpp tum_type_conversions_ros_cpp tum_ros_helpers_cpp)
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC
@@ -40,7 +44,7 @@ target_include_directories(example_monitor
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
 )
-ament_target_dependencies(example_monitor rclcpp std_msgs diagnostic_msgs tum_helpers_cpp tum_types_cpp tum_type_conversions_ros_cpp)
+ament_target_dependencies(example_monitor rclcpp ament_index_cpp std_msgs diagnostic_msgs sensor_msgs message_filters tum_helpers_cpp tum_types_cpp tum_type_conversions_ros_cpp tum_ros_helpers_cpp)
 target_link_libraries(example_monitor ${PROJECT_NAME})
 
 install(
@@ -67,7 +71,7 @@ install(
 
 
 ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET) # so client can also call target_link_libraries(template_lib_cpp::template_lib_cpp)
-ament_export_dependencies(diagnostic_msgs param_management_ros2_integration_cpp tum_types_cpp param_management_cpp tum_helpers_cpp tum_type_conversions_ros_cpp) # other dependencies so client does not need to call find_package on them
+ament_export_dependencies(diagnostic_msgs sensor_msgs message_filters param_management_ros2_integration_cpp tum_types_cpp param_management_cpp tum_helpers_cpp tum_type_conversions_ros_cpp ament_index_cpp tum_ros_helpers_cpp) # other dependencies so client does not need to call find_package on them
 
 # if(BUILD_TESTING)
 #   find_package(ament_lint_auto REQUIRED)

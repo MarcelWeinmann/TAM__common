@@ -111,9 +111,7 @@ PYBIND11_MODULE(_control_binding, m)
     .def_readwrite("a_y_max_mps2", &tam::types::control::ControlConstraintPoint::a_y_max_mps2)
     .def_readwrite(
       "a_x_max_engine_mps2", &tam::types::control::ControlConstraintPoint::a_x_max_engine_mps2)
-    .def_readwrite(
-      "shape_factor",
-      &tam::types::control::ControlConstraintPoint::shape_factor)
+    .def_readwrite("shape_factor", &tam::types::control::ControlConstraintPoint::shape_factor)
     .def_readwrite(
       "lateral_error_min_m", &tam::types::control::ControlConstraintPoint::lateral_error_min_m)
     .def_readwrite(
@@ -144,5 +142,14 @@ PYBIND11_MODULE(_control_binding, m)
     .def_readwrite(
       "omega_engine_radps", &tam::types::control::DriveTrainFeedback::omega_engine_radps)
     .def_readwrite("gear_engaged", &tam::types::control::DriveTrainFeedback::gear_engaged);
+
+  py::class_<tam::types::control::AdditionalEspTargets>(m, "AdditionalEspTargets")
+    .def(py::init())
+    .def_readwrite("ay_request_mps2", &tam::types::control::AdditionalEspTargets::ay_request_mps2)
+    .def_readwrite(
+      "yaw_rate_request_radps", &tam::types::control::AdditionalEspTargets::yaw_rate_request_radps)
+    .def_readwrite(
+      "slip_angle_request_rad", &tam::types::control::AdditionalEspTargets::slip_angle_request_rad);
+
   // #endregion
 }

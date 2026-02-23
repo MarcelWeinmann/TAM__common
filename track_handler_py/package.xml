@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>track_handler_py</name>
-  <version>1.0.0</version>
+  <version>2.0.0</version>
   <description>Python bindings for track_handler_cpp</description>
   <maintainer email="sven.goblirsch@tum.de">Sven Goblirsch</maintainer>
   <license>Apache 2.0</license>
@@ -14,7 +14,6 @@
   <buildtool_depend>python_cmake_module</buildtool_depend>
 
   <depend>pybind11_vendor</depend>
-  <depend>param_manager_py</depend>
 
   <!-- Content dependencies -->
   <depend>tum_types_py</depend>

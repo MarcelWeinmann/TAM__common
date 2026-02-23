@@ -4,12 +4,25 @@
 namespace tam::types::prediction
 {
 // Inputs
+using ObjectID = std::array<uint8_t, 16>;
+struct ObjectIDHash
+{
+  std::size_t operator()(const ObjectID & id) const
+  {
+    std::size_t seed = 0;
+    for (const uint8_t byte : id) {
+      seed ^= byte + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
+    return seed;
+  }
+};
 struct TrackedObject
 {
-  float object_id;
+  ObjectID object_id;
   /// @brief range (min=0.0, max=1.0)
   float existence_probability;
   bool is_stationary;
+  mutable bool is_in_pit = false;
   tam::types::common::Vector3D<double> position_m;
   tam::types::common::Vector3D<double>
     orientation_rad;  // Euler Angles - therefore the assignement is (x:roll, y:pitch, z:yaw)
@@ -64,17 +77,10 @@ struct PredictedPath
   float time_step_s;
   std::vector<Pose> path;
 };
-struct Interaction
-{
-  double s_progress;
-  bool giveway_right;
-  bool giveway_left;
-};
 template <typename TrackedObjectType>
 struct PredictedObject_
 {
   TrackedObjectType tracked_object;
-  std::vector<Interaction> interaction{};
   std::vector<PredictedPath> predicted_paths{};
 };
 using PredictedObject = PredictedObject_<TrackedObjectCref>;

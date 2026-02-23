@@ -9,6 +9,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 // messages
+#include "autoware_auto_control_msgs/msg/longitudinal_command.hpp"
 #include "autoware_auto_perception_msgs/msg/predicted_object.hpp"
 #include "autoware_auto_perception_msgs/msg/predicted_objects.hpp"
 #include "autoware_auto_perception_msgs/msg/predicted_path.hpp"
@@ -22,6 +23,7 @@
 #include "sensor_msgs/msg/imu.hpp"
 #include "tier4_planning_msgs/msg/trajectory.hpp"
 #include "tum_msgs/msg/tum_control_constraints.hpp"
+#include "tum_msgs/msg/tum_enhanced_longitudinal_command.hpp"
 #include "tum_msgs/msg/tum_float64_per_wheel.hpp"
 // types
 #include "tum_helpers_cpp/type_conversion.hpp"
@@ -70,12 +72,22 @@ tam::types::control::ControlConstraintPoint constraint_type_from_msg(
   const tum_msgs::msg::TUMControlConstraintPoint & msg);
 tum_msgs::msg::TUMControlConstraintPoint constraint_msg_from_type(
   const tam::types::control::ControlConstraintPoint & constraint);
+tam::types::control::LongitudinalControlCommand longitudinal_command_type_from_msg(
+  const autoware_auto_control_msgs::msg::LongitudinalCommand & msg);
+autoware_auto_control_msgs::msg::LongitudinalCommand longitudinal_command_msg_from_type(
+  const tam::types::control::LongitudinalControlCommand & longitudinal_command);
+tam::types::control::EnhancedLongitudinalControlCommand enhanced_longitudinal_command_type_from_msg(
+  const tum_msgs::msg::TUMEnhancedLongitudinalCommand & msg);
+tum_msgs::msg::TUMEnhancedLongitudinalCommand enhanced_longitudinal_command_msg_from_type(
+  const tam::types::control::EnhancedLongitudinalControlCommand & enhanced_long_cmd);
 
 // Prediction
 tam::types::prediction::TrackedObjects tracked_objects_type_from_msg(
   autoware_auto_perception_msgs::msg::TrackedObjects const & msg);
 autoware_auto_perception_msgs::msg::TrackedObjects tracked_objects_msg_from_type(
   const tam::types::prediction::TrackedObjects & tracked_objects);
+autoware_auto_perception_msgs::msg::PredictedObject predicted_object_msg_from_type(
+  const tam::types::prediction::PredictedObject & predicted_object);
 autoware_auto_perception_msgs::msg::PredictedObjects predicted_objects_msg_from_type(
   const tam::types::prediction::PredictedObjects & predicted_objects);
 tam::types::prediction::PredictedObjectsWithOwnedTrackedObjects predicted_objects_type_from_msg(

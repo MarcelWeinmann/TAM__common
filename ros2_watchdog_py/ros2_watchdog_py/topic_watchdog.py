@@ -10,7 +10,12 @@ T = TypeVar("T")
 
 
 class WatchdogSubscription:
-    def __init__(self, timeout_callback: Callable[[Duration], None], timeout: Duration, last_update: Time) -> None:
+    def __init__(
+        self,
+        timeout_callback: Callable[[Duration], None],
+        timeout: Duration,
+        last_update: Time,
+    ) -> None:
         self.timeout_callback = timeout_callback
         self.timeout = timeout
         self.last_update = last_update

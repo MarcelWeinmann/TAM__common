@@ -5,11 +5,12 @@
 
 #include <algorithm>
 #include <memory>
-#include <vector>
-#include <string>
-#include <utility>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/bool.hpp>
+#include <string>
+#include <tum_ros_helpers_cpp/qos.hpp>
+#include <utility>
+#include <vector>
 
 #include "tum_msgs/msg/tum_connection_status.hpp"
 namespace tam::network
@@ -29,7 +30,7 @@ public:
   explicit Sender(const std::string & status_topic) : Node("test_sender")
   {
     _statusSubs = this->create_subscription<tum_msgs::msg::TUMConnectionStatus>(
-      status_topic, 1, std::bind(&Sender::statusMessageReceived, this, _1));
+      status_topic, tam::ros::get_qos(), std::bind(&Sender::statusMessageReceived, this, _1));
   }
   Sender(
     const std::string & status_topic, const std::string & node_name,
@@ -37,14 +38,15 @@ public:
   : Node(node_name, options)
   {
     _statusSubs = this->create_subscription<tum_msgs::msg::TUMConnectionStatus>(
-      status_topic, 1, std::bind(&Sender::statusMessageReceived, this, _1));
+      status_topic, tam::ros::get_qos(), std::bind(&Sender::statusMessageReceived, this, _1));
   }
-  Sender() : Node("test_sender")
+  Sender(const std::string node_name, rclcpp::NodeOptions options) : Node(node_name, options)
   {
     use_status_topic = false;
     this->declare_parameter("ip_address", "127.0.0.1");
     _connectionStat = tum_msgs::msg::TUMConnectionStatus::CONNECTED;
   }
+  Sender() : Sender("test_sender", rclcpp::NodeOptions()) {}
   template <typename T>
   void add_processer(
     std::unique_ptr<BaseSender> && protocol_strategy, const std::string & topic = "/topic_to_send",
@@ -56,7 +58,7 @@ public:
 
     std::function<void(const std::shared_ptr<T>)> fnc =
       std::bind(&Sender::sendMessageReceived<T>, this, _1, sender);
-    sender->sendMsgSubs = this->create_subscription<T>(topic, 10, fnc);
+    sender->sendMsgSubs = this->create_subscription<T>(topic, tam::ros::get_qos(), fnc);
     sender->min_pub_age_ms = min_send_age_ms;
     if (!use_status_topic) {
       sender->Sender->change_destination(this->get_parameter("ip_address").as_string());
