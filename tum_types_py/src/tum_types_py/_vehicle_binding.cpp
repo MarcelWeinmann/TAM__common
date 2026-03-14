@@ -31,14 +31,23 @@ PYBIND11_MODULE(_vehicle_binding, m)
     .def_readwrite("force_cog", &tam::types::vehicle_params::AeroModelOutput::force_cog)
     .def_readwrite("torque", &tam::types::vehicle_params::AeroModelOutput::torque);
 
+  py::class_<tam::types::vehicle_params::BrakeFriction>(m, "BrakeFriction")
+    .def(py::init())
+    .def_readwrite("temperature", &tam::types::vehicle_params::BrakeFriction::temperature)
+    .def_readwrite("coefficient", &tam::types::vehicle_params::BrakeFriction::coefficient);
+
   py::class_<tam::types::vehicle_params::Brake>(m, "Brake")
     .def(py::init())
     .def_readwrite("brake_bias_front", &tam::types::vehicle_params::Brake::brake_bias_front)
     .def_readwrite("disc_area", &tam::types::vehicle_params::Brake::disc_area)
     .def_readwrite("disc_radius", &tam::types::vehicle_params::Brake::disc_radius)
     .def_readwrite("pad_area", &tam::types::vehicle_params::Brake::pad_area)
+    .def_readwrite("pad_mean_radius", &tam::types::vehicle_params::Brake::pad_mean_radius)
+    .def_readwrite("pad_number", &tam::types::vehicle_params::Brake::pad_number)
+    .def_readwrite("piston_diameter", &tam::types::vehicle_params::Brake::piston_diameter)
     .def_readwrite("max_pressure", &tam::types::vehicle_params::Brake::max_pressure)
-    .def_readwrite("friction_coeff", &tam::types::vehicle_params::Brake::friction_coeff);
+    .def_readwrite("friction_coeff", &tam::types::vehicle_params::Brake::friction_coeff)
+    .def_readwrite("friction", &tam::types::vehicle_params::Brake::friction);
 
   py::class_<tam::types::vehicle_params::Dimension>(m, "Dimension")
     .def(py::init())
@@ -98,6 +107,21 @@ PYBIND11_MODULE(_vehicle_binding, m)
     .def_readwrite("wheel_front", &tam::types::vehicle_params::Mass::wheel_front)
     .def_readwrite("wheel_rear", &tam::types::vehicle_params::Mass::wheel_rear);
 
+  py::class_<tam::types::vehicle_params::PlanningLimits>(m, "PlanningLimits")
+    .def(py::init())
+    .def_readwrite(
+      "ax machine limits", &tam::types::vehicle_params::PlanningLimits::ax_machine_limits)
+    .def_readwrite(
+      "ax machine limits p2p enabled",
+      &tam::types::vehicle_params::PlanningLimits::ax_machine_limits_p2p_enabled)
+    .def_readwrite(
+      "gg exponent ax pos", &tam::types::vehicle_params::PlanningLimits::gg_exponent_ax_pos)
+    .def_readwrite(
+      "gg exponent ax neg", &tam::types::vehicle_params::PlanningLimits::gg_exponent_ax_neg)
+    .def_readwrite("ax_min_scale", &tam::types::vehicle_params::PlanningLimits::ax_min_scale)
+    .def_readwrite("ax_max_scale", &tam::types::vehicle_params::PlanningLimits::ax_max_scale)
+    .def_readwrite("ay_scale", &tam::types::vehicle_params::PlanningLimits::ay_scale);
+
   py::class_<tam::types::vehicle_params::Vehicle>(m, "Vehicle")
     .def(py::init())
     .def_readwrite("actuator", &tam::types::vehicle_params::Vehicle::actuator)
@@ -108,5 +132,6 @@ PYBIND11_MODULE(_vehicle_binding, m)
     .def_readwrite("engine", &tam::types::vehicle_params::Vehicle::engine)
     .def_readwrite("inertia", &tam::types::vehicle_params::Vehicle::inertia)
     .def_readwrite("steering", &tam::types::vehicle_params::Vehicle::steering)
-    .def_readwrite("mass", &tam::types::vehicle_params::Vehicle::mass);
+    .def_readwrite("mass", &tam::types::vehicle_params::Vehicle::mass)
+    .def_readwrite("planning_limits", &tam::types::vehicle_params::Vehicle::planning_limits);
 }

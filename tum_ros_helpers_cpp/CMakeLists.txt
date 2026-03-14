@@ -9,7 +9,10 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(tf2_ros REQUIRED)  
+find_package(tsl_msgs REQUIRED)
 
 add_library(${PROJECT_NAME} INTERFACE)
 
@@ -21,7 +24,10 @@ target_include_directories(${PROJECT_NAME}
 
 ament_target_dependencies(
   ${PROJECT_NAME} INTERFACE
+  Eigen3
   rclcpp
+  tf2_ros
+  tsl_msgs
 )
 
 install(
@@ -39,7 +45,7 @@ install(
 )
 
 ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET) # so client can also call target_link_libraries(template_lib_cpp::template_lib_cpp)
-ament_export_dependencies(rclcpp) # other dependencies so client does not need to call find_package on them
+ament_export_dependencies(Eigen3 rclcpp tf2_ros tsl_msgs) # other dependencies so client does not need to call find_package on them
 
 # if(BUILD_TESTING)
 #   find_package(ament_lint_auto REQUIRED)

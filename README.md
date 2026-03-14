@@ -25,6 +25,8 @@ This repository contains several packages that can be built. Below is a list of 
 | [`tum_types_py`](./tum_types_cpp/README.md) | Python binding for tum_types_cpp |
 | [`vehicle_handler_cpp`](./vehicle_handler_cpp/README.md) | C++ library for handling vehicle parameter and vehcile specific calculations |
 | [`vehicle_handler_py`](./vehicle_handler_cpp/README.md) | Python binding for vehicle_handler_cpp |
+| [`dynamic_node_composition`](./dynamic_node_composition/README.md) | Library for dynamically loading ROS2 nodes as rclcpp components from shared libraries. Includes CLI argument parsing and executables for component loading. |
+| [`logging`](./logging/) | More performant ROS2 bag recorder than the builtin ros2 one. |
 | [`boost_sml`](./vendor_pkgs/boost_sml/README.md) | Vendor Package for the Open Source State Machine Library for C++ |
 | [`matplotlib_cpp`](./vendor_pkgs/matplotlib_cpp/README.md) | Vendor Package for the Open Source Plotting library for C++ applications |
 
@@ -88,5 +90,8 @@ The main contributors of the Project are:
 - [Dominic Ebner](https://github.com/Dekadee)
 - [Daniel Esser](https://github.com/DaniEsser)
 - [Marcel Weinmann](https://github.com/MarcelWeinmann)
+- [Ann-Kathrin Schwehn](https://github.com/annkathrinschwehn)
+- [Sascha Büttner](https://github.com/sascha-buettner)
+- [Frederik Werner](https://github.com/FrederikSWerner)
 
 We also want to thank all other members of TUM Autonomous Motorsport for actively developing this library.

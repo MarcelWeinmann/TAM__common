@@ -10,11 +10,16 @@ target_compile_features(rotations_test PUBLIC c_std_99 cxx_std_17)
 ament_target_dependencies(rotations_test matplotlib_cpp)
 target_link_libraries(rotations_test ${PROJECT_NAME})
 
+add_executable(ccma_test ccma_tests.cpp)
+target_compile_features(ccma_test PUBLIC c_std_99 cxx_std_17)
+ament_target_dependencies(ccma_test matplotlib_cpp)
+target_link_libraries(ccma_test ${PROJECT_NAME})
+
 install(
   DIRECTORY ../include/
   DESTINATION include
 )
 install(
-  TARGETS test_main rotations_test
+  TARGETS test_main rotations_test ccma_test
   DESTINATION lib/${PROJECT_NAME}
 )

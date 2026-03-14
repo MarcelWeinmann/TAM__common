@@ -114,8 +114,8 @@ TEST(curvilinear_cosy, set_s_closed)
 }
 TEST_F(curvilinear_cosy_open_straight, in_bounds)
 {
-  Eigen::Vector2d pos1 = cosy->convert_to_sn(1.2, 3);
-  Eigen::Vector2d pos2 = cosy->convert_to_sn(3.9, -0.5);
+  Eigen::Vector2d pos1 = cosy->convert_to_sn_global_2d(1.2, 3, 0.0);
+  Eigen::Vector2d pos2 = cosy->convert_to_sn_global_2d(3.9, -0.5, 0.0);
   ASSERT_FLOAT_EQ(pos1[0], 0.2);
   ASSERT_FLOAT_EQ(pos1[1], 3);
   ASSERT_FLOAT_EQ(pos2[0], 2.9);
@@ -123,8 +123,8 @@ TEST_F(curvilinear_cosy_open_straight, in_bounds)
 }
 TEST_F(curvilinear_cosy_open_straight, out_of_bounds)
 {
-  Eigen::Vector2d pos1 = cosy->convert_to_sn(0.7, 3);
-  Eigen::Vector2d pos2 = cosy->convert_to_sn(4.2, -0.5);
+  Eigen::Vector2d pos1 = cosy->convert_to_sn_global_2d(0.7, 3, 0.0);
+  Eigen::Vector2d pos2 = cosy->convert_to_sn_global_2d(4.2, -0.5, 0.0);
   ASSERT_FLOAT_EQ(pos1[0], -0.3);
   ASSERT_FLOAT_EQ(pos1[1], 3);
   ASSERT_FLOAT_EQ(pos2[0], 3.2);
@@ -132,10 +132,10 @@ TEST_F(curvilinear_cosy_open_straight, out_of_bounds)
 }
 TEST_F(curvilinear_cosy_closed, in_bounds)
 {
-  Eigen::Vector2d pos1 = cosy->convert_to_sn(-1, 1);
-  Eigen::Vector2d pos2 = cosy->convert_to_sn(-1, 0);
-  Eigen::Vector2d pos3 = cosy->convert_to_sn(-1, -1);
-  Eigen::Vector2d pos4 = cosy->convert_to_sn(0.8, 1.2);
+  Eigen::Vector2d pos1 = cosy->convert_to_sn_global_2d(-1, 1, 0.0);
+  Eigen::Vector2d pos2 = cosy->convert_to_sn_global_2d(-1, 0, 0.0);
+  Eigen::Vector2d pos3 = cosy->convert_to_sn_global_2d(-1, -1, 0.0);
+  Eigen::Vector2d pos4 = cosy->convert_to_sn_global_2d(0.8, 1.2, 0.0);
   ASSERT_FLOAT_EQ(pos1[0], 1);
   ASSERT_FLOAT_EQ(pos1[1], 0);
   ASSERT_FLOAT_EQ(pos2[0], 6);
@@ -269,21 +269,22 @@ TEST_F(curvilinear_cosy_open, heading)
   ASSERT_FLOAT_EQ(cosy->convert_to_cartesian(5, 0, to_rad(0))[2], to_rad(-90));
 
   // to sn
-  ASSERT_FLOAT_EQ(cosy->convert_to_sn(0, 2, to_rad(-45))[2], to_rad(-45));
-  ASSERT_FLOAT_EQ(cosy->convert_to_sn(0, 2, to_rad(20))[2], to_rad(20));
-  ASSERT_FLOAT_EQ(cosy->convert_to_sn(0, 2, to_rad(-100))[2], to_rad(-100));
+  ASSERT_FLOAT_EQ(cosy->convert_to_sn_global(0, 2, 0.0, to_rad(-45))[2], to_rad(-45));
+  ASSERT_FLOAT_EQ(cosy->convert_to_sn_global(0, 2, 0.0, to_rad(20))[2], to_rad(20));
+  ASSERT_FLOAT_EQ(cosy->convert_to_sn_global(0, 2, 0.0, to_rad(-100))[2], to_rad(-100));
   ASSERT_FLOAT_EQ(
-    to_deg(cosy->convert_to_sn(1, 1, to_rad(0))[2]), to_deg(calc_heading(Eigen::Vector2d(2, 1))));
+    to_deg(cosy->convert_to_sn_global(1, 1, 0.0, to_rad(0))[2]),
+    to_deg(calc_heading(Eigen::Vector2d(2, 1))));
 }
 TEST_F(curvilinear_cosy_open, return_index)
 {
-  auto ret = cosy->convert_to_sn_and_get_idx(0.0, 1.0);
+  auto ret = cosy->convert_to_sn_and_get_idx_global_2d(0.0, 1.0, 0.0);
   ASSERT_FLOAT_EQ(std::get<1>(ret), 1.5);
   //
-  auto ret2 = cosy->convert_to_sn_and_get_idx(2, 0.3);
+  auto ret2 = cosy->convert_to_sn_and_get_idx_global_2d(2, 0.3, 0.0);
   ASSERT_FLOAT_EQ(std::get<1>(ret2), 2.9);
   //
-  auto ret3 = cosy->convert_to_sn_and_get_idx(-2, -1);
+  auto ret3 = cosy->convert_to_sn_and_get_idx_global_2d(-2, -1, 0.0);
   ASSERT_FLOAT_EQ(std::get<1>(ret3), -1);
   ASSERT_FLOAT_EQ(std::get<0>(ret3)[0], -1);
   ASSERT_FLOAT_EQ(std::get<0>(ret3)[1], 1);

@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>limit_handler_py</name>
-  <version>0.15.5</version>
+  <version>2.0.0</version>
   <description>Python bindings for limit_handler package, helpers functions for vehicle dynamics limits</description>
   <maintainer email="simon.hoffmann@tum.de">Simon Hoffmann</maintainer>
   <license>Apache 2.0</license>

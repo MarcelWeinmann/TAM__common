@@ -1,5 +1,7 @@
+// Copyright 2026 TUMFTM
 #pragma once
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <array>
 #include <chrono>
 #include <filesystem>
 #include <memory>
@@ -16,12 +18,19 @@ public:
   {
     // declare parameters
     declare_parameters();
+
     // Get Path to timeout.yml
-    std::filesystem::path path = ament_index_cpp::get_package_share_directory("ros2_watchdog_cpp")
-                                   .append("/config/timeout.yml");
-    // Fill param manager with values in timeout.yml
-    tam::pmg::load_overwrites_from_yaml(
-      param_manager_.get(), path.string(), "/TimeoutValues_ms", true);
+    auto load_param_file = [this](std::string config_file_name) {
+      std::filesystem::path path =
+        ament_index_cpp::get_package_share_directory("ros2_watchdog_cpp")
+          .append("/config/")
+          .append(config_file_name);
+      // Fill param manager with values in timeout.yml
+      tam::pmg::load_overwrites_from_yaml(
+        param_manager_.get(), path.string(), "/TimeoutValues_ms", true);
+    };
+    load_param_file("multiplier.yml");
+    load_param_file("timeout.yml");
 
     // Save this values to avoid lookup at runtime
     multiplier = param_manager_->get_value("Multiplier").as_double();
@@ -104,6 +113,8 @@ private:
     param_manager_->declare_parameter(
       "JoystickEngineShutoff", 60000, tam::pmg::ParameterType::INTEGER, "");
     param_manager_->declare_parameter("StateMachine", 100, tam::pmg::ParameterType::INTEGER, "");
+    param_manager_->declare_parameter("HeartbeatWarning", 15, tam::pmg::ParameterType::INTEGER, "");
+    param_manager_->declare_parameter("HeartbeatError", 50, tam::pmg::ParameterType::INTEGER, "");
   }
 };
 }  // namespace tam::core

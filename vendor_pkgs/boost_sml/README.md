@@ -1,6 +1,8 @@
 # Boost SML Vendor Package
 For usage and reference: https://github.com/boost-ext/sml
 
+> **_NOTE:_**  This package contains a modified version of the [boost-sml Library](https://github.com/boost-ext/sml).
+
 ## Create UML Diagram from your code
 If you execute the following C++ file (replace the required parts), a text file will be generated with plant-uml syntax.
 

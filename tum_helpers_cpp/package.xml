@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>tum_helpers_cpp</name>
-  <version>1.0.0</version>
+  <version>2.0.0</version>
   <description>Generic helper functions for TAM</description>
   <maintainer email="simon.sagmeister@tum.de">Simon Sagmeister</maintainer>
   <license>Apache 2.0</license>

@@ -31,7 +31,51 @@ target_include_directories(${PROJECT_NAME}
         $<BUILD_INTERFACE:${YAML_INCLUDE_DIRS}>
 )
 target_compile_features(${PROJECT_NAME} PUBLIC c_std_99 cxx_std_17)
-target_compile_options(${PROJECT_NAME} PRIVATE -O3 -fopenmp) #-dndebug -fno-math-errno -fopenmp)
+# target_compile_options(${PROJECT_NAME} PRIVATE -O3 -fopenmp) #-dndebug -fno-math-errno -fopenmp)
+
+# Aggressive non-Debug opts (one genex per flag)
+# set(SP_FAST_OPTS
+#   $<$<NOT:$<CONFIG:Debug>>:-Ofast>
+#   $<$<NOT:$<CONFIG:Debug>>:-ffast-math>
+#   $<$<NOT:$<CONFIG:Debug>>:-fno-math-errno>
+#   $<$<NOT:$<CONFIG:Debug>>:-fno-trapping-math>
+#   $<$<NOT:$<CONFIG:Debug>>:-ffp-contract=fast>
+#   $<$<NOT:$<CONFIG:Debug>>:-finline-functions>
+#   $<$<NOT:$<CONFIG:Debug>>:-funroll-loops>
+#   $<$<NOT:$<CONFIG:Debug>>:-fpeel-loops>
+#   $<$<NOT:$<CONFIG:Debug>>:-funswitch-loops>
+#   $<$<NOT:$<CONFIG:Debug>>:-ftree-vectorize>
+#   $<$<NOT:$<CONFIG:Debug>>:-fvect-cost-model=very-cheap>
+#   $<$<NOT:$<CONFIG:Debug>>:-fomit-frame-pointer>
+#   # Per-compiler extras
+#   $<$<AND:$<NOT:$<CONFIG:Debug>>,$<CXX_COMPILER_ID:GNU>>:-frename-registers>
+#   $<$<AND:$<NOT:$<CONFIG:Debug>>,$<CXX_COMPILER_ID:GNU>>:-fira-loop-pressure>
+#   $<$<AND:$<NOT:$<CONFIG:Debug>>,$<CXX_COMPILER_ID:Clang>>:-mllvm>
+#   $<$<AND:$<NOT:$<CONFIG:Debug>>,$<CXX_COMPILER_ID:Clang>>:-inline-threshold=1000>
+#   $<$<AND:$<NOT:$<CONFIG:Debug>>,$<CXX_COMPILER_ID:Clang>>:-mllvm>
+#   $<$<AND:$<NOT:$<CONFIG:Debug>>,$<CXX_COMPILER_ID:Clang>>:-unroll-threshold=1000>
+# )
+
+# Portable arch flags (list elements, not a single string)
+set(SP_ARCH_OPTS
+  # $<$<NOT:$<CONFIG:Debug>>:-march=x86-64-v3>
+  # $<$<NOT:$<CONFIG:Debug>>:-mtune=znver3>
+)
+
+set(SP_FAST_OPTS
+        $<$<NOT:$<CONFIG:Debug>>:-O3>
+        $<$<NOT:$<CONFIG:Debug>>:-DNDEBUG>
+        )
+
+# Optional Debug niceties (again: list, no quotes)
+set(SP_DEBUG_OPTS
+  $<$<CONFIG:Debug>:-O0>
+  $<$<CONFIG:Debug>:-g3>
+  $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
+)
+
+target_compile_options(${PROJECT_NAME} PRIVATE ${SP_ARCH_OPTS} ${SP_FAST_OPTS} ${SP_DEBUG_OPTS})
+
 ament_target_dependencies(${PROJECT_NAME} PUBLIC Eigen3 ament_index_cpp param_management_cpp param_management_ros2_integration_cpp tum_helpers_cpp tum_types_cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${YAML_CPP_LIBRARIES} )
 
@@ -75,6 +119,10 @@ if(BUILD_TESTING)
 endif()
 
 add_subdirectory(test)
+
+target_compile_definitions(track_handler_cpp
+  PRIVATE BUILDING_CURVILINEAR_COSY
+)
 
 ament_package()
 

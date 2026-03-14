@@ -6,6 +6,7 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
+#include <tum_ros_helpers_cpp/qos.hpp>
 #include <vector>
 
 using std::placeholders::_1;
@@ -32,7 +33,7 @@ public:
     sender->net_sender = std::move(protocol_strategy);
     std::function<void(const std::shared_ptr<T>)> fnc =
       std::bind(&RosSender::ros_msg_received<T>, this, _1, sender);
-    sender->ros_subscriber = node->create_subscription<T>(topic, 10, fnc);
+    sender->ros_subscriber = node->create_subscription<T>(topic, tam::ros::get_qos(), fnc);
     sender->topic = topic;
   }
 

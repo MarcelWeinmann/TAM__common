@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>ros2_watchdog_py</name>
-  <version>1.0.0</version>
+  <version>2.0.0</version>
   <description>Generic watchdog functionality for Python ROS 2 nodes</description>
   <maintainer email="dominic.ebner@tum.de">Dominic Ebner</maintainer>
   <license>Apache 2.0</license>
@@ -11,6 +11,7 @@
   <depend>tum_helpers_py</depend>
   <depend>tum_types_py</depend>
   <depend>tum_type_conversions_ros_py</depend>
+  <depend>tum_ros_helpers_py</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

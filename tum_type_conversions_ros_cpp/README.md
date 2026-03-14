@@ -18,6 +18,7 @@ The following types can be converted into one another:
 | `autoware_auto_perception_msgs::msg::TrackedObjects` | `tam::types::prediction::TrackedObjects` |
 | `autoware_auto_perception_msgs::msg::PredictedObjects` | `tam::types::prediction::PredictedObjects` |
 | `geometry_msgs::msg::Quaternion` | `tam::types::common::EulerYPR` |
+| `tum_msgs::msg::TUMEnhancedLongitudinalCommand` | `tam::types::control::EnhancedLongitudinalControlCommand` |
 
 
 The following C++ types can be converted into a ROS type:

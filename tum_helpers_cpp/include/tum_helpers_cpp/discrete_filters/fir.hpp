@@ -2,9 +2,8 @@
 #pragma once
 
 #include <deque>
-#include <memory>
 #include <eigen3/Eigen/Dense>
-
+#include <memory>
 namespace tam::core::state
 {
 class FIR

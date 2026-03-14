@@ -2,6 +2,7 @@
 #pragma once
 
 #include <vector>
+
 #include "tum_types_cpp/common.hpp"
 namespace tam::types::vehicle_params
 {
@@ -29,6 +30,11 @@ struct AeroModelOutput
   // Aerodynamic torque on the vehicle body
   tam::types::common::Vector3D<double> torque{0.0, 0.0, 0.0};
 };
+struct BrakeFriction
+{
+  std::vector<double> temperature{std::vector<double>({0.0})};
+  std::vector<double> coefficient{std::vector<double>({0.0})};
+};
 struct Brake
 {
   double brake_bias_front{0.0};
@@ -40,6 +46,7 @@ struct Brake
   double piston_diameter{0.0};
   double max_pressure{0.0};
   double friction_coeff{0.0};
+  BrakeFriction friction{};
 };
 struct Dimension
 {
@@ -98,6 +105,16 @@ struct RollingResistance
 {
   double coeff{0.0};
 };
+struct PlanningLimits
+{
+  double gg_exponent_ax_pos{0.0};
+  double gg_exponent_ax_neg{0.0};
+  std::vector<double> ax_machine_limits{};
+  std::vector<double> ax_machine_limits_p2p_enabled{};
+  double ax_min_scale{0.0};
+  double ax_max_scale{0.0};
+  double ay_scale{0.0};
+};
 struct Vehicle
 {
 public:
@@ -111,6 +128,6 @@ public:
   Steering steering;
   Mass mass;
   RollingResistance rolling_resistance;
+  PlanningLimits planning_limits;
 };
 }  // namespace tam::types::vehicle_params
-

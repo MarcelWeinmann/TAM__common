@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>limit_handler_cpp</name>
-  <version>1.0.0</version>
+  <version>2.0.0</version>
   <description>Package with helper functions for calculation vehicle dynamics limits</description>
   <maintainer email="simon.hoffmann@tum.de">Simon Hoffmann</maintainer>
   <license>Apache 2.0</license>

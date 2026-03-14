@@ -1,3 +1,4 @@
+// Copyright 2025 Simon Hoffmann
 #pragma once
 #include <arpa/inet.h>
 #include <ifaddrs.h>
@@ -10,10 +11,12 @@
 #include <algorithm>
 #include <cerrno>
 #include <cstring>
+#include <fstream>
 #include <iostream>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/serialization.hpp>
+#include <sstream>
 #include <string>
 #include <vector>
 namespace tam::network::helpers
@@ -128,27 +131,68 @@ static std::optional<int> get_own_ip_idx_in_list(const std::vector<std::string> 
 static std::string get_string_from_ip_list(const std::vector<std::string> & ip_list)
 {
   std::string list = "[";
-  for (size_t i = 0; i < ip_list.size(); i++)
-  {
-      list += ip_list.at(i);
-      if(i < ip_list.size() - 1)
-      {
-          list += ",";
-      }
+  for (size_t i = 0; i < ip_list.size(); i++) {
+    list += ip_list.at(i);
+    if (i < ip_list.size() - 1) {
+      list += ",";
+    }
   }
   return list + "]";
 }
 static std::string get_string_from_sockaddr_list(const std::vector<sockaddr_in> & ip_list)
 {
   std::string list = "[";
-  for (size_t i = 0; i < ip_list.size(); i++)
-  {
-      list += std::string(inet_ntoa(ip_list.at(i).sin_addr));
-      if(i < ip_list.size() - 1)
-      {
-          list += ",";
-      }
+  for (size_t i = 0; i < ip_list.size(); i++) {
+    list += std::string(inet_ntoa(ip_list.at(i).sin_addr));
+    if (i < ip_list.size() - 1) {
+      list += ",";
+    }
   }
   return list + "]";
+}
+struct ProcessorConfig
+{
+  std::string topic_name, msg_type;
+  std::size_t port;
+};
+// Helper function to trim leading and trailing whitespace
+inline std::string trim(const std::string & str)
+{
+  size_t first = str.find_first_not_of(" ");
+  if (first == std::string::npos) return "";
+  size_t last = str.find_last_not_of(" ");
+  return str.substr(first, last - first + 1);
+}
+inline std::vector<ProcessorConfig> parseSenderReceiverConfig(const std::string & filename)
+{
+  std::vector<ProcessorConfig> configs;
+  std::ifstream file(filename);
+  std::string line;
+
+  if (!file.is_open()) {
+    std::cerr << "Failed to open file: " << filename << std::endl;
+    return configs;
+  }
+
+  // Skip the header line
+  std::getline(file, line);
+
+  while (std::getline(file, line)) {
+    std::stringstream ss(line);
+    std::string topic, msg, portStr;
+
+    if (
+      std::getline(ss, topic, ',') && std::getline(ss, msg, ',') &&
+      std::getline(ss, portStr, ',')) {
+      ProcessorConfig config;
+      config.topic_name = trim(topic);
+      config.msg_type = trim(msg);
+      config.port = std::stoul(trim(portStr));
+
+      configs.push_back(config);
+    }
+  }
+
+  return configs;
 }
 };  // namespace tam::network::helpers

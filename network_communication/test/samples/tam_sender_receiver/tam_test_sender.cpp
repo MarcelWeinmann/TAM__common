@@ -1,3 +1,4 @@
+// Copyright 2026 TUMFTM
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 

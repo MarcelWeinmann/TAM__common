@@ -5,11 +5,12 @@ cmake_minimum_required(VERSION 3.12)
 # ==========================================
 
 set(PROJECT_NAME dynamic_node_composition)
-set(EXECUTABLES StaticSingleThreadedExecutor StaticSingleThreadedExecutorWithParameterValidation)
+set(EXECUTABLES SingleThreadedExecutor StaticSingleThreadedExecutor SingleThreadedExecutorWithParameterValidation StaticSingleThreadedExecutorWithParameterValidation)
 
 set(LIB_DEPENDENCIES
   ament_index_cpp
   ament_cmake
+  ament_index_cpp
   rclcpp
   rclcpp_components
 )

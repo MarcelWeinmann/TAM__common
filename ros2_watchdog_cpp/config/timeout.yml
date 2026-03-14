@@ -1,8 +1,7 @@
 ---
 TimeoutValues_ms:
   ros__parameters:
-    Multiplier: 1.0
-    Default: 5000
+    Default: 500
     # Nodes
     TrackingController: 1000
     TrackingPrediction: 1000
