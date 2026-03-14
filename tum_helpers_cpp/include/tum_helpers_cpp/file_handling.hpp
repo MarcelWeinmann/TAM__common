@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <cstring>
 #include <string>
 #include <vector>
 namespace tam::helpers::files
@@ -72,7 +73,13 @@ namespace tam::helpers::files
 inline double qnan_bits() noexcept
 {
   constexpr uint64_t QNAN = 0x7ff8000000000001ULL;  // quiet NaN payload
+#if __cplusplus >= 202002L
   return std::bit_cast<double>(QNAN);
+#else
+  double result;
+  std::memcpy(&result, &QNAN, sizeof(double));
+  return result;
+#endif // __cplusplus >= 202002L
 }
 template <typename M>
 static M load_csv(

@@ -6,6 +6,7 @@
 #include <iostream>
 #include <optional>
 #include <vector>
+#include <cstring>
 
 #include "track_handler_cpp/track_types.hpp"
 #include "tum_helpers_cpp/file_handling.hpp"
@@ -201,7 +202,12 @@ inline RacelineData get_raceline_from_file(const std::string & path)
 
 inline bool is_nan_bits(double x) noexcept
 {
+#if __cplusplus >= 202002L
   const uint64_t u = std::bit_cast<uint64_t>(x);
+#else
+  uint64_t u;
+  std::memcpy(&u, &x, sizeof(uint64_t));
+#endif
   return ((u & 0x7ff0000000000000ULL) == 0x7ff0000000000000ULL) &&
          ((u & 0x000fffffffffffffULL) != 0ULL);
 }
